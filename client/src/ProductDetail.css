@@ -1,0 +1,149 @@
+.detail-container {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  padding: 25px;
+  flex-wrap: wrap;
+}
+
+.detail-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.detail-img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.detail-right {
+  flex: 1;
+  min-width: 300px;
+}
+
+.detail-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ff4c7d;
+}
+
+.detail-price {
+  margin: 10px 0;
+  font-size: 22px;
+}
+
+.detail-price .old {
+  text-decoration: line-through;
+  margin-right: 10px;
+  color: gray;
+}
+
+.detail-price .new {
+  font-weight: bold;
+  color: #ff4c7d;
+}
+
+.detail-desc {
+  margin: 10px 0;
+  white-space: pre-line;
+}
+
+.stock {
+  font-size: 18px;
+  margin: 10px 0;
+}
+
+.add-basket-btn {
+  background: #ff4c7d;
+  padding: 12px 20px;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.add-basket-btn:hover {
+  background: #e63b6c;
+}
+
+/* RELATED PRODUCTS SECTION */
+.related-section {
+  width: 100%;
+  margin-top: 40px;
+}
+
+.related-section h3 {
+  margin-bottom: 10px;
+}
+
+/* Horizontal scroll bar */
+.related-scroll {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-behavior: smooth;
+}
+
+.related-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.related-scroll::-webkit-scrollbar-thumb {
+  background: #ff4c7d;
+  border-radius: 10px;
+}
+
+/* Cards */
+.related-card {
+  min-width: 160px;
+  max-width: 170px;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.related-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.related-name {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.related-price {
+  font-weight: bold;
+  color: #ff4c7d;
+}
+
+.in-stock {
+  display: block;
+  margin-top: 4px;
+  color: green;
+  font-size: 12px;
+}
+/* Success Message */
+.success-message {
+  margin-top: 10px;
+  padding: 10px;
+  background: #d4edda;
+  color: #155724;
+  border-left: 4px solid #28a745;
+  border-radius: 6px;
+  font-size: 15px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Smooth fade */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

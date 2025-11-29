@@ -1,0 +1,159 @@
+/* NAVBAR MAIN */
+.navbar {
+  width: 100%;
+  padding: 14px 40px;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ececec;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
+}
+
+/* LEFT SIDE */
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.brand-name {
+  font-size: 22px;
+  font-weight: bold;
+  color: #333;
+  letter-spacing: 0.5px;
+}
+
+/* RIGHT SIDE MENU */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-link {
+  text-decoration: none;
+  font-size: 17px;
+  color: #444;
+  font-weight: 500;
+  transition: 0.3s;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.nav-link:hover {
+  color: #ffffff;
+  background: #ff4d6d;
+}
+
+/* ICONS */
+.icon {
+  font-size: 20px;
+  cursor: pointer;
+  color: #444;
+  transition: 0.3s;
+}
+
+.icon:hover {
+  color: #ff4d6d;
+}
+
+/* DROPDOWN */
+.dropdown {
+  position: relative;
+  cursor: pointer;
+}
+
+.dropdown-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.arrow-icon {
+  transition: 0.3s;
+}
+
+.dropdown:hover .arrow-icon {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 35px;
+  left: 0;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 12px 0;
+  box-shadow: 0px 5px 12px rgba(0,0,0,0.15);
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dropdown-menu a {
+  padding: 10px 15px;
+  font-size: 15px;
+  text-decoration: none;
+  color: #333;
+  transition: 0.2s;
+}
+
+.dropdown-menu a:hover {
+  background: #ffe3ea;
+  color: #ff003c;
+}
+
+/* MONEY + CART */
+.money-cart {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.money-text {
+  font-size: 17px;
+  font-weight: 600;
+  color: #333;
+}
+
+.cart-icon-wrapper {
+  position: relative;
+}
+
+.cart-icon {
+  font-size: 22px;
+}
+
+.cart-count {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: #ff003c;
+  color: white;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  font-size: 11px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* FADE IN ANIMATION */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

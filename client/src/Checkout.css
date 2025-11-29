@@ -1,0 +1,244 @@
+/* ---------------------------------------- */
+/* MAIN CHECKOUT GRID */
+/* ---------------------------------------- */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1.8fr 1.0fr;
+  gap: 35px;
+  max-width: 1150px;
+  margin: 40px auto;
+  padding: 0 20px;
+  color: #333;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* LEFT SIDE — BILLING DETAILS */
+.checkout-left {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+  border: 1px solid #f3d4dd;
+}
+
+.checkout-left h2 {
+  font-size: 26px;
+  color: #ff4d6d;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+/* FORM CONTAINER */
+.billing-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+}
+
+/* TWO INPUT ROW */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+/* INPUT FIELDS */
+input,
+textarea {
+  width: 100%;
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+input:hover,
+textarea:hover {
+  background: #fff;
+  border-color: #ff9bb0;
+}
+
+input:focus,
+textarea:focus {
+  background: #fff;
+  border-color: #ff4d6d;
+  box-shadow: 0 0 8px rgba(255, 77, 109, 0.35);
+}
+
+textarea {
+  resize: none;
+  height: 110px;
+}
+
+/* TERMS */
+.terms {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+  font-size: 14px;
+  color: #444;
+}
+
+.terms input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* RIGHT SIDE ORDER SUMMARY */
+.checkout-right {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 16px;
+  border: 1px solid #f1c9d3;
+  box-shadow: 0 4px 20px rgba(255, 77, 109, 0.12);
+}
+
+.checkout-right h3 {
+  color: #ff4d6d;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.order-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  padding: 6px 0;
+}
+
+.order-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.order-total-row.total {
+  font-size: 19px;
+  margin-top: 10px;
+  color: #222;
+}
+
+/* INFO TEXT */
+.pay-info,
+.privacy {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* PLACE ORDER BUTTON */
+.place-order-btn {
+  margin-top: 18px;
+  width: 100%;
+  padding: 15px;
+  background: #ff4d6d;
+  border: none;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.place-order-btn:hover {
+  background: #e04362;
+}
+
+/* MOBILE VIEW */
+@media (max-width: 900px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-right {
+    margin-top: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --------------------------------------------------- */
+/*           🛍 ORDERS PAGE — NEW CSS ADDED           */
+/* --------------------------------------------------- */
+
+/* MAIN ORDERS CONTAINER */
+.orders-container {
+  max-width: 850px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+/* ORDER CARD */
+.order-card {
+  background: #fff;
+  padding: 20px 25px;
+  margin-bottom: 25px;
+  border-radius: 14px;
+  border: 1px solid #f3d4dd;
+  box-shadow: 0 4px 15px rgba(255, 77, 109, 0.10);
+}
+
+/* SEPARATOR BETWEEN ORDER CARDS */
+.order-card:not(:last-child) {
+  border-bottom: 2px solid #ffd0da;
+  padding-bottom: 35px;
+  margin-bottom: 35px;
+}
+
+/* ORDER TITLE */
+.order-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ff4d6d;
+  margin-bottom: 12px;
+}
+
+/* ITEM LIST */
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 16px;
+  border-bottom: 1px dashed #f4b7c3;
+}
+
+/* LAST ITEM REMOVE BORDER */
+.order-item:last-child {
+  border-bottom: none;
+}
+
+/* SUMMARY SECTION */
+.order-summary-box {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 2px solid #ffd4de;
+  font-size: 17px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* BUTTON / FOOTER */
+.order-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}

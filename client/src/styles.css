@@ -1,0 +1,41 @@
+﻿body {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background: #faf7fb
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0px auto
+}
+
+.banner {
+    height: 280px;
+    background: url("./images/banner1.jpeg") center/cover;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff
+}
+
+.card-hover {
+    transition: transform .22s ease
+}
+
+.card-hover:hover {
+    transform: translateY(-6px)
+}
+
+.small-muted {
+    color: #666;
+    font-size: 0.95rem
+}
+
+a.nav-link {
+    cursor: pointer
+}
+/* Change carousel arrows color */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  filter: invert(100%) sepia(90%) saturate(500%) hue-rotate(310deg);
+}

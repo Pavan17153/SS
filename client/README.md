@@ -1,0 +1,1 @@
+﻿# SS Fashion - Client\n\n1) cd client\n2) npm install\n3) npm start\n\nUpdate src/firebase.js with your Firebase config and enable Email/Password auth in Firebase console.\nReplace YOUR_RAZORPAY_KEY in src/pages/Checkout.js to test payments.

@@ -1,0 +1,17 @@
+.remember-me-container {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* space between checkbox and label */
+}
+
+.remember-me-container input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.remember-me-container label {
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}

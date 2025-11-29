@@ -1,0 +1,69 @@
+.admin-home {
+  width: 90%;
+  max-width: 700px;
+  margin: 20px auto;
+  padding: 25px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  font-family: "Poppins", sans-serif;
+}
+
+.admin-home h2 {
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.admin-home h3 {
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.admin-home label {
+  display: block;
+  margin-top: 15px;
+  font-weight: 500;
+}
+
+.admin-home input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+.slider-field,
+.trend-edit {
+  margin-bottom: 12px;
+}
+
+.trend-edit {
+  display: flex;
+  gap: 10px;
+}
+
+.add-btn {
+  background: #444;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  margin: 10px 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #007bff;
+  color: white;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  margin-top: 25px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}

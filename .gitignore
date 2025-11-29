@@ -1,0 +1,9 @@
+admin/node_modules/
+client/node_modules/
+server/node_modules/
+
+*.env
+.env
+
+# Logs
+*.log

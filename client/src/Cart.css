@@ -1,0 +1,225 @@
+/* MAIN CONTAINER */
+.cart-container {
+  max-width: 1100px;
+  margin: 35px auto;
+  padding: 28px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+
+/* TITLE */
+.cart-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 25px;
+  border-left: 6px solid #ff4d6d;
+  padding-left: 10px;
+}
+
+/* EMPTY CART */
+.empty-cart {
+  text-align: center;
+  padding: 30px;
+  font-size: 18px;
+  color: #777;
+}
+
+/* GRID LAYOUT FOR LEFT & RIGHT */
+.cart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+}
+
+/* LEFT CART ITEMS */
+.cart-left {
+  width: 100%;
+}
+
+/* TABLE HEADER */
+.cart-table-header {
+  display: grid;
+  grid-template-columns: 80px 100px 1fr 100px 120px 100px;
+  padding: 12px 0;
+  border-bottom: 2px solid #ffe3ea;
+  font-weight: 600;
+  color: #444;
+}
+
+.cart-table-header span {
+  text-align: center;
+}
+
+/* CART ROW */
+.cart-row {
+  display: grid;
+  grid-template-columns: 80px 100px 1fr 100px 120px 100px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3d3db;
+}
+
+.cart-img {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid #ffe5eb;
+  margin: auto;
+}
+
+/* DELETE ICON */
+.delete-icon {
+  font-size: 20px;
+  color: #d00036;
+  cursor: pointer;
+  margin: auto;
+  transition: 0.3s;
+}
+
+.delete-icon:hover {
+  color: #ff003c;
+  transform: scale(1.2);
+}
+
+/* PRODUCT NAME */
+.row-product {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  text-align: center;
+}
+
+/* PRICE */
+.row-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ff003c;
+  text-align: center;
+}
+
+/* SUBTOTAL */
+.row-subtotal {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  text-align: center;
+}
+
+/* QUANTITY BUTTONS */
+.qty-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty-box button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: #ff4d6d;
+  color: white;
+  cursor: pointer;
+}
+
+.qty-box span {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* RIGHT SUMMARY BOX */
+.cart-right {
+  width: 100%;
+}
+
+.cart-summary {
+  padding: 25px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #f1d2db;
+  box-shadow: 0 4px 12px rgba(255, 77, 109, 0.15);
+}
+
+.cart-summary h3 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 17px;
+  border-bottom: 1px solid #f7dce4;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+/* CHECKOUT BUTTON */
+.checkout-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff4d6d, #ff003c);
+  color: white;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.checkout-btn:hover {
+  background: linear-gradient(135deg, #ff003c, #b30029);
+  transform: translateY(-2px);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .cart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-table-header,
+  .cart-row {
+    grid-template-columns: 60px 80px 1fr 80px 100px 80px;
+  }
+}
+/* UNDO MESSAGE */
+.undo-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffe5eb;
+  color: #d00036;
+  font-weight: 600;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  gap: 10px;
+}
+
+.undo-message button {
+  background: transparent;
+  border: none;
+  color: #ff003c;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.undo-message button:hover {
+  color: #b30029;
+  transform: scale(1.05);
+}
+
+/* Remaining CSS remains exactly same (from your last code) */
