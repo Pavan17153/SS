@@ -64,11 +64,13 @@ const Navbar = () => {
           {dropdown && (
             <div className="dropdown-menu">
               <Link to="/categories">Maggam Work</Link>
-              <Link to="/categories/computer-work">Computer Work</Link>
-              <Link to="/categories/sarees">Sarees</Link>
-              <Link to="/categories/cloths">Cloths</Link>
-              <Link to="/categories/dress">Dress</Link>
-              <Link to="/categories/stitch-blouse">Stitch Blouse</Link>
+              <Link to="/categories">Computer Work</Link>
+              <Link to="/categories">Sarees</Link>
+              <Link to="/categories">Cloths</Link>
+              <Link to="/categories">Dress</Link>
+              <Link to="/categories">Stitch Blouse</Link>
+              <Link to="/categories">Tops & Pants</Link>
+              <Link to="/categories">Kids Wear</Link>
             </div>
           )}
         </div>

@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from "react";
+﻿// admin/src/pages/Products.js
+import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
 
@@ -34,7 +35,7 @@ export default function Products(){
       </div>
       <table border="1" cellPadding="6">
         <thead><tr><th>Name</th><th>Price</th><th>Category</th><th>Image</th><th>Views</th><th>Action</th></tr></thead>
-        <tbody>{items.map(i=> <tr key={i.id}><td>{i.name}</td><td>₹{i.price}</td><td>{i.category}</td><td><img src={i.image} className="admin-thumb"/></td><td>{i.views||0}</td><td><button onClick={()=>remove(i.id)}>Delete</button></td></tr>)}</tbody>
+        <tbody>{items.map(i=> <tr key={i.id}><td>{i.name}</td><td>₹{i.price}</td><td>{i.category}</td><td><img src={i.image || (i.images && i.images[0]) || "/placeholder.jpg"} className="admin-thumb" alt={i.name}/></td><td>{i.views||0}</td><td><button onClick={()=>remove(i.id)}>Delete</button></td></tr>)}</tbody>
       </table>
     </div>
   );

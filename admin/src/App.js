@@ -1,6 +1,11 @@
-﻿// admin/src/App.js
-import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+﻿import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
@@ -20,7 +25,11 @@ import Shipping from "./pages/Shipping";
 import Terms from "./pages/Terms";
 import Faq from "./pages/Faq";
 
-// For hiding sidebar on Login Page
+// NEWLY ADDED PAGES
+import ProductAdmin from "./pages/Products";
+import ProductList from "./pages/ProductList";
+
+// -------- LAYOUT (Hide Sidebar on Login page) ----------
 function Layout({ children }) {
   const location = useLocation();
   const hideSidebar = location.pathname === "/login";
@@ -33,7 +42,7 @@ function Layout({ children }) {
   );
 }
 
-// Protected Route
+// -------- PROTECTED ROUTE ----------
 function ProtectedRoute({ user, element }) {
   return user ? element : <Navigate to="/login" />;
 }
@@ -55,20 +64,70 @@ export default function App() {
     <BrowserRouter>
       <Layout>
         <Routes>
-          {/* Login Page */}
+          {/* Login */}
           <Route path="/login" element={<AdminLogin />} />
 
-          {/* Protected Routes — only logged admin can access */}
-          <Route path="/" element={<ProtectedRoute user={user} element={<Dashboard />} />} />
-          <Route path="/categories" element={<ProtectedRoute user={user} element={<Categories />} />} />
-          <Route path="/orders" element={<ProtectedRoute user={user} element={<Orders />} />} />
-          <Route path="/payments" element={<ProtectedRoute user={user} element={<Payments />} />} />
-          <Route path="/contact" element={<ProtectedRoute user={user} element={<Contact />} />} />
-          <Route path="/about" element={<ProtectedRoute user={user} element={<About />} />} />
-          <Route path="/privacy" element={<ProtectedRoute user={user} element={<Privacy />} />} />
-          <Route path="/shipping" element={<ProtectedRoute user={user} element={<Shipping />} />} />
-          <Route path="/terms" element={<ProtectedRoute user={user} element={<Terms />} />} />
-          <Route path="/faq" element={<ProtectedRoute user={user} element={<Faq />} />} />
+          {/* Protected Routes */}
+          <Route
+            path="/"
+            element={<ProtectedRoute user={user} element={<Dashboard />} />}
+          />
+
+          <Route
+            path="/categories"
+            element={<ProtectedRoute user={user} element={<Categories />} />}
+          />
+
+          <Route
+            path="/orders"
+            element={<ProtectedRoute user={user} element={<Orders />} />}
+          />
+
+          <Route
+            path="/payments"
+            element={<ProtectedRoute user={user} element={<Payments />} />}
+          />
+
+          <Route
+            path="/contact"
+            element={<ProtectedRoute user={user} element={<Contact />} />}
+          />
+
+          <Route
+            path="/about"
+            element={<ProtectedRoute user={user} element={<About />} />}
+          />
+
+          <Route
+            path="/privacy"
+            element={<ProtectedRoute user={user} element={<Privacy />} />}
+          />
+
+          <Route
+            path="/shipping"
+            element={<ProtectedRoute user={user} element={<Shipping />} />}
+          />
+
+          <Route
+            path="/terms"
+            element={<ProtectedRoute user={user} element={<Terms />} />}
+          />
+
+          <Route
+            path="/faq"
+            element={<ProtectedRoute user={user} element={<Faq />} />}
+          />
+
+          {/* ---------- PRODUCT ROUTES ---------- */}
+          <Route
+            path="/add-product"
+            element={<ProtectedRoute user={user} element={<ProductAdmin />} />}
+          />
+
+          <Route
+            path="/product-list"
+            element={<ProtectedRoute user={user} element={<ProductList />} />}
+          />
         </Routes>
       </Layout>
     </BrowserRouter>

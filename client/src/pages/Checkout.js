@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
 import RazorpayPayment from "./RazorpayPayment";
 import "../Checkout.css";
 
@@ -20,7 +21,7 @@ export default function Checkout() {
     city: "",
     state: "",
     pin: "",
-    phone: "",       // <-- PHONE INPUT WILL SAVE TO DATABASE
+    phone: "",
     email: "",
     orderNotes: "",
   });
@@ -31,15 +32,59 @@ export default function Checkout() {
   const shipping = cart.length > 0 ? 60 : 0;
   const grandTotal = total + shipping;
 
+  // Get logged in user's email
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUserEmail(user.email);
         setForm((prev) => ({ ...prev, email: user.email }));
       }
     });
-    window.scrollTo(0, 0);
+    return () => unsubscribe();
   }, []);
+
+  // Listen for payment success
+  useEffect(() => {
+    const handler = async (e) => {
+      const paymentId = e.detail?.paymentId;
+
+      if (!paymentId) return;
+
+      if (!userEmail) {
+        alert("User not logged in. Cannot save order.");
+        return;
+      }
+
+      try {
+        // Save order to Firestore
+        await addDoc(collection(db, "orders"), {
+          customerEmail: userEmail,
+          customerPhone: form.phone,
+          billingDetails: { ...form },
+          items: cart.map((item) => ({
+            name: item.name,
+            price: item.price,
+            qty: item.qty || 1,
+            image: item.image || "", // make sure your cart items have image field
+          })),
+          totalPrice: grandTotal,
+          paymentId: paymentId,
+          status: "paid",
+          createdAt: Timestamp.now(),
+        });
+
+        alert("Order Saved Successfully!");
+        localStorage.removeItem("ssf_cart");
+        window.location.href = "/success";
+      } catch (err) {
+        console.error("Error saving order:", err);
+        alert("Error saving order to database. Check console.");
+      }
+    };
+
+    window.addEventListener("payment_success", handler);
+    return () => window.removeEventListener("payment_success", handler);
+  }, [cart, form, userEmail, grandTotal]);
 
   const handleInput = (e) => {
     const { name, value } = e.target;
@@ -48,8 +93,7 @@ export default function Checkout() {
 
   return (
     <div className="checkout-grid">
-
-      {/* LEFT SIDE — BILLING DETAILS */}
+      {/* LEFT: Billing Form */}
       <div className="checkout-left">
         <h2>Billing Details</h2>
 
@@ -62,49 +106,32 @@ export default function Checkout() {
         )}
 
         <div className="billing-form">
-
           <div className="form-row">
-            <input type="text" name="firstName" placeholder="First name *"
-              value={form.firstName} onChange={handleInput} />
-            <input type="text" name="lastName" placeholder="Last name *"
-              value={form.lastName} onChange={handleInput} />
+            <input type="text" name="firstName" placeholder="First name *" value={form.firstName} onChange={handleInput} />
+            <input type="text" name="lastName" placeholder="Last name *" value={form.lastName} onChange={handleInput} />
           </div>
 
-          <input type="text" name="company" placeholder="Company name (optional)"
-            value={form.company} onChange={handleInput} />
-
-          <input type="text" name="country" placeholder="Country *"
-            value={form.country} onChange={handleInput} />
-
-          <input type="text" name="address1" placeholder="Street address *"
-            value={form.address1} onChange={handleInput} />
-
-          <input type="text" name="address2" placeholder="Apartment, suite (optional)"
-            value={form.address2} onChange={handleInput} />
+          <input type="text" name="company" placeholder="Company name (optional)" value={form.company} onChange={handleInput} />
+          <input type="text" name="country" placeholder="Country *" value={form.country} onChange={handleInput} />
+          <input type="text" name="address1" placeholder="Street address *" value={form.address1} onChange={handleInput} />
+          <input type="text" name="address2" placeholder="Apartment, suite (optional)" value={form.address2} onChange={handleInput} />
 
           <div className="form-row">
-            <input type="text" name="city" placeholder="City *"
-              value={form.city} onChange={handleInput} />
-            <input type="text" name="state" placeholder="State *"
-              value={form.state} onChange={handleInput} />
+            <input type="text" name="city" placeholder="City *" value={form.city} onChange={handleInput} />
+            <input type="text" name="state" placeholder="State *" value={form.state} onChange={handleInput} />
           </div>
 
           <div className="form-row">
-            <input type="text" name="pin" placeholder="PIN Code *"
-              value={form.pin} onChange={handleInput} />
-            <input type="text" name="phone" placeholder="Phone *"
-              value={form.phone} onChange={handleInput} />   {/* PHONE SAVED */}
+            <input type="text" name="pin" placeholder="PIN Code *" value={form.pin} onChange={handleInput} />
+            <input type="text" name="phone" placeholder="Phone *" value={form.phone} onChange={handleInput} />
           </div>
 
-          <input type="email" name="email" placeholder="Email address *"
-            value={form.email} onChange={handleInput} />
-
-          <textarea name="orderNotes" placeholder="Order notes (optional)"
-            value={form.orderNotes} onChange={handleInput} />
+          <input type="email" name="email" placeholder="Email address *" value={form.email} onChange={handleInput} />
+          <textarea name="orderNotes" placeholder="Order notes (optional)" value={form.orderNotes} onChange={handleInput} />
         </div>
       </div>
 
-      {/* RIGHT SIDE — ORDER SUMMARY */}
+      {/* RIGHT: Order Summary + Payment */}
       <div className="checkout-right">
         <h3>Your Order</h3>
 
@@ -117,49 +144,25 @@ export default function Checkout() {
           ))}
 
           <hr />
-
-          <div className="order-total-row">
-            <span>Subtotal</span>
-            <span>₹{total}</span>
-          </div>
-
-          <div className="order-total-row">
-            <span>Shipping</span>
-            <span>₹{shipping}</span>
-          </div>
-
-          <div className="order-total-row total">
-            <strong>Total</strong>
-            <strong>₹{grandTotal}</strong>
-          </div>
-
-          <p className="privacy">
-            Your personal data will be used to process your order and for other
-            purposes described in our <a href="/Privacy">privacy policy</a>.
-          </p>
+          <div className="order-total-row"><span>Subtotal</span><span>₹{total}</span></div>
+          <div className="order-total-row"><span>Shipping</span><span>₹{shipping}</span></div>
+          <div className="order-total-row total"><strong>Total</strong><strong>₹{grandTotal}</strong></div>
 
           <div className="terms order-terms">
-            <input
-              type="checkbox"
-              checked={agreeTerms}
-              onChange={() => setAgreeTerms(!agreeTerms)}
-            />
+            <input type="checkbox" checked={agreeTerms} onChange={() => setAgreeTerms(!agreeTerms)} />
             <label>I have read and agree to the website terms & conditions *</label>
           </div>
 
-          {/* Razorpay Button */}
           <RazorpayPayment
             cart={cart}
             form={form}
             totalAmount={grandTotal}
             userEmail={userEmail}
-            customerPhone={form.phone}   /** <-- ADDED THIS LINE */
+            customerPhone={form.phone}
             agreeTerms={agreeTerms}
           />
-
         </div>
       </div>
-
     </div>
   );
 }
