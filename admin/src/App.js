@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from "react";
+﻿// src/App.js
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -12,8 +13,8 @@ import { auth } from "./firebase";
 
 import Sidebar from "./components/Sidebar";
 
+// Pages
 import AdminLogin from "./pages/AdminLogin";
-
 import Dashboard from "./pages/Dashboard";
 import Categories from "./pages/Categories";
 import Orders from "./pages/Orders";
@@ -25,14 +26,17 @@ import Shipping from "./pages/Shipping";
 import Terms from "./pages/Terms";
 import Faq from "./pages/Faq";
 
-// NEWLY ADDED PAGES
+// Product Pages
 import ProductAdmin from "./pages/Products";
 import ProductList from "./pages/ProductList";
 
-// -------- LAYOUT (Hide Sidebar on Login page) ----------
+// ------------------ Layout ------------------
 function Layout({ children }) {
   const location = useLocation();
-  const hideSidebar = location.pathname === "/login";
+
+  // Hide sidebar on these routes
+  const hideSidebarRoutes = ["/login"];
+  const hideSidebar = hideSidebarRoutes.includes(location.pathname);
 
   return (
     <div className="admin-layout">
@@ -42,20 +46,23 @@ function Layout({ children }) {
   );
 }
 
-// -------- PROTECTED ROUTE ----------
+// ------------------ Protected Route ------------------
 function ProtectedRoute({ user, element }) {
   return user ? element : <Navigate to="/login" />;
 }
 
+// ------------------ App Component ------------------
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    onAuthStateChanged(auth, (u) => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
+
+    return () => unsubscribe();
   }, []);
 
   if (loading) return <h3 style={{ padding: 30 }}>Checking Login...</h3>;
@@ -72,58 +79,48 @@ export default function App() {
             path="/"
             element={<ProtectedRoute user={user} element={<Dashboard />} />}
           />
-
           <Route
             path="/categories"
             element={<ProtectedRoute user={user} element={<Categories />} />}
           />
-
           <Route
             path="/orders"
             element={<ProtectedRoute user={user} element={<Orders />} />}
           />
-
           <Route
             path="/payments"
             element={<ProtectedRoute user={user} element={<Payments />} />}
           />
-
           <Route
             path="/contact"
             element={<ProtectedRoute user={user} element={<Contact />} />}
           />
-
           <Route
             path="/about"
             element={<ProtectedRoute user={user} element={<About />} />}
           />
-
           <Route
             path="/privacy"
             element={<ProtectedRoute user={user} element={<Privacy />} />}
           />
-
           <Route
             path="/shipping"
             element={<ProtectedRoute user={user} element={<Shipping />} />}
           />
-
           <Route
             path="/terms"
             element={<ProtectedRoute user={user} element={<Terms />} />}
           />
-
           <Route
             path="/faq"
             element={<ProtectedRoute user={user} element={<Faq />} />}
           />
 
-          {/* ---------- PRODUCT ROUTES ---------- */}
+          {/* Product Routes */}
           <Route
             path="/add-product"
             element={<ProtectedRoute user={user} element={<ProductAdmin />} />}
           />
-
           <Route
             path="/product-list"
             element={<ProtectedRoute user={user} element={<ProductList />} />}

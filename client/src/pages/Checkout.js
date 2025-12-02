@@ -29,7 +29,19 @@ export default function Checkout() {
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const total = cart.reduce((s, i) => s + i.price * (i.qty || 1), 0);
-  const shipping = cart.length > 0 ? 60 : 0;
+  let shipping =0;
+
+  if (cart.length > 0) {
+    if (total <= 1500) {
+      shipping = 60;
+    } else if (total > 1500 && total <= 3000) {
+      shipping = 120;
+    } else if (total > 3000 && total <= 4500) {
+      shipping = 180;
+    } else {
+      shipping = 240; // for 4500–6000
+    }
+  }
   const grandTotal = total + shipping;
 
   // Get logged in user's email
@@ -38,6 +50,8 @@ export default function Checkout() {
       if (user) {
         setUserEmail(user.email);
         setForm((prev) => ({ ...prev, email: user.email }));
+      } else {
+        setUserEmail("");
       }
     });
     return () => unsubscribe();
@@ -65,7 +79,7 @@ export default function Checkout() {
             name: item.name,
             price: item.price,
             qty: item.qty || 1,
-            image: item.image || "", // make sure your cart items have image field
+            image: item.image || "",
           })),
           totalPrice: grandTotal,
           paymentId: paymentId,
@@ -75,7 +89,8 @@ export default function Checkout() {
 
         alert("Order Saved Successfully!");
         localStorage.removeItem("ssf_cart");
-        window.location.href = "/success";
+        // redirect to orders page (or success page)
+        window.location.href = "/orders";
       } catch (err) {
         console.error("Error saving order:", err);
         alert("Error saving order to database. Check console.");

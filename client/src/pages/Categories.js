@@ -96,26 +96,48 @@ export default function CategoriesPage() {
   };
 
   // Add product to cart
-  const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
-    const exists = cart.find((c) => c.id === product.id);
+const addToCart = (product) => {
+  let cart = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
+  
+  // Make sure stock is a number
+  const stockQty = Number(product.stockQty) || 0;
 
-    if (exists) exists.qty += 1;
-    else
-      cart.push({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        qty: 1,
-        image: getPrimaryImage(product),
-      });
+  // Find product in cart by unique ID
+  const existingIndex = cart.findIndex((c) => c.id === product.id);
 
-    localStorage.setItem("ssf_cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("storage"));
+  if (existingIndex !== -1) {
+    const existingItem = cart[existingIndex];
+    
+    // Check stock
+    if ((existingItem.qty || 1) >= stockQty) {
+      alert(`Only ${stockQty} items available for ${product.name}`);
+      return;
+    }
 
-    setSuccessMsg(`${product.name} added to cart!`);
-    setTimeout(() => setSuccessMsg(""), 2500);
-  };
+    const updatedCart = [...cart];
+    updatedCart[existingIndex] = {
+      ...existingItem,
+      qty: (existingItem.qty || 1) + 1,
+      stock: stockQty, // update stock for this specific product
+    };
+    cart = updatedCart;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      qty: 1,
+      image: getPrimaryImage(product),
+      stock: stockQty, // save stock
+    });
+  }
+
+  localStorage.setItem("ssf_cart", JSON.stringify(cart));
+  window.dispatchEvent(new Event("storage"));
+
+  setSuccessMsg(`${product.name} added to cart!`);
+  setTimeout(() => setSuccessMsg(""), 2500);
+};
 
   const categoryCount = (catId) =>
     products.filter((p) => p.category === catId).length;
