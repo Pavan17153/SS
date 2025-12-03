@@ -1,0 +1,48 @@
+.payment-container {
+  padding: 20px;
+}
+
+.status-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.status-card {
+  background: #f1f1f1;
+  padding: 18px;
+  border-radius: 10px;
+  width: 220px;
+  text-align: center;
+}
+
+.status-card.green {
+  background: #c7ffd1;
+}
+
+.status-card.blue {
+  background: #cbe1ff;
+}
+
+.payment-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payment-table th,
+.payment-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+}
+
+.edit-btn {
+  background: #0080ff;
+  color: white;
+  padding: 5px 10px;
+}
+
+.delete-btn {
+  background: red;
+  color: white;
+  padding: 5px 10px;
+}

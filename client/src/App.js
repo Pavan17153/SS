@@ -5,9 +5,6 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
-// NEW → Sync guest cart with user cart
-import AuthCartSync from "./components/AuthCartSync";
-
 // Main Pages
 import Home from "./pages/Home";
 import Categories from "./pages/Categories";
@@ -30,9 +27,6 @@ import ShippingPolicy from "./pages/Shipping";
 export default function App() {
   return (
     <>
-      {/* Runs globally to merge guest cart → user cart */}
-      <AuthCartSync />
-
       {/* Navbar */}
       <Navbar />
 

@@ -8,7 +8,9 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
 } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import "./adminOrders.css";
 
@@ -20,6 +22,7 @@ function toMillis(createdAt) {
 }
 
 export default function AdminOrders() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [productsCount, setProductsCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -68,7 +71,7 @@ export default function AdminOrders() {
 
   // Toggle shipped
   const handleShipToggle = async (order) => {
-    if (order.status === "Cancelled") return; // do nothing if cancelled
+    if (order.status === "Cancelled") return;
     const newStatus = order.status === "shipped" ? "unshipped" : "shipped";
     setOrders((prev) =>
       prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
@@ -86,7 +89,7 @@ export default function AdminOrders() {
 
   // Toggle delivered
   const handleDeliverToggle = async (order) => {
-    if (order.status === "Cancelled") return; // do nothing if cancelled
+    if (order.status === "Cancelled") return;
     const newStatus = order.status === "delivered" ? "unshipped" : "delivered";
     setOrders((prev) =>
       prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
@@ -300,6 +303,26 @@ export default function AdminOrders() {
     }
   };
 
+  // Handle Cancelled button click
+  const handleCancelledClick = async (order) => {
+    try {
+      // Save order details to new collection 'cancelledPayments'
+      await setDoc(doc(db, "cancelledPayments", order.id), {
+        orderId: order.id,
+        paymentId: order.paymentId || "Not Available",
+        totalPrice: order.totalPrice || 0,
+        subCategory: order.subCategory || 0,
+        createdAt: order.createdAt || null,
+      });
+
+      alert("Order sent to Cancelled Payments page.");
+      navigate("/payments"); // redirect to Payments page
+    } catch (err) {
+      console.error("Error saving to cancelledPayments:", err);
+      alert("Could not move order to payments page.");
+    }
+  };
+
   if (loading) return <p>Loading orders...</p>;
 
   return (
@@ -374,7 +397,11 @@ export default function AdminOrders() {
 
               {/* Cancelled button */}
               <td>
-                {o.status === "Cancelled" && <button className="status-btn" style={{ background: "red", color: "#fff" }}>Cancelled</button>}
+                {o.status === "Cancelled" && (
+                  <button className="status-btn" style={{ background: "red", color: "#fff" }} onClick={() => handleCancelledClick(o)}>
+                    Cancelled
+                  </button>
+                )}
               </td>
 
               <td>₹{o.totalPrice || 0}</td>
@@ -412,15 +439,14 @@ export default function AdminOrders() {
               <>
                 <h2>Order Details</h2>
                 <p><strong>Order ID:</strong> {selectedOrder.id}</p>
-                 {/* 🔥 CHANGED — ONLY payment id shown */}
-            <p><strong>Payment ID:</strong> {selectedOrder.paymentId || "Not Available"}</p>
+                <p><strong>Payment ID:</strong> {selectedOrder.paymentId || "Not Available"}</p>
 
-            <h3>Items</h3>
-            <ul>
-              {selectedOrder.items?.map((it, i) => (
-                <li key={i}>{it.name} — Qty: {it.qty} — ₹{it.price}</li>
-              ))}
-            </ul>
+                <h3>Items</h3>
+                <ul>
+                  {selectedOrder.items?.map((it, i) => (
+                    <li key={i}>{it.name} — Qty: {it.qty} — ₹{it.price}</li>
+                  ))}
+                </ul>
                 <p><strong>Total:</strong> ₹{selectedOrder.totalPrice}</p>
                 <p><strong>Status:</strong> {selectedOrder.status}</p>
 
