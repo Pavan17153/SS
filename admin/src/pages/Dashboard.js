@@ -1,12 +1,8 @@
 // admin/src/pages/AdminHome.js
 import React, { useState, useEffect } from "react";
-import { db } from "../firebase";
+import { db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import "../AdminHome.css";
-
-// CLOUDINARY CONFIG
-const CLOUDINARY_CLOUD = "dshnpehlq"; 
-const CLOUDINARY_UNSIGNED_PRESET = "unsigned_homepage_preset";
 
 export default function AdminHome() {
   const [loading, setLoading] = useState(true);
@@ -19,6 +15,9 @@ export default function AdminHome() {
 
   const refDoc = doc(db, "homepage", "homeContent");
 
+  // ------------------------------
+  // LOAD HOMEPAGE DATA
+  // ------------------------------
   useEffect(() => {
     const load = async () => {
       try {
@@ -26,22 +25,15 @@ export default function AdminHome() {
         if (snap.exists()) {
           setContent(snap.data());
         } else {
-          await setDoc(
-            refDoc,
-            {
-              title: "Welcome to SS Fashion",
-              subtitle: "Where tradition meets modern elegance.",
-              sliderImages: [],
-              trending: []
-            },
-            { merge: true }
-          );
-          setContent({
+          const defaultData = {
             title: "Welcome to SS Fashion",
             subtitle: "Where tradition meets modern elegance.",
             sliderImages: [],
             trending: []
-          });
+          };
+
+          await setDoc(refDoc, defaultData, { merge: true });
+          setContent(defaultData);
         }
       } catch (e) {
         console.error(e);
@@ -53,29 +45,35 @@ export default function AdminHome() {
     load();
   }, []);
 
-  // ---------------------------
+  // ----------------------------------
   // CLOUDINARY UPLOAD FUNCTION
-  // ---------------------------
+  // ----------------------------------
   const uploadToCloudinary = async (file) => {
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      alert("Cloudinary ENV variables missing!");
+      return;
+    }
+
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("upload_preset", CLOUDINARY_UNSIGNED_PRESET);
+    fd.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
     const res = await fetch(url, {
       method: "POST",
       body: fd
     });
 
-    if (!res.ok) throw new Error("Cloudinary Upload Failed");
+    if (!res.ok) throw new Error("Cloudinary upload failed");
 
     const data = await res.json();
-    return data.secure_url; // PUBLIC URL
+    return data.secure_url;
   };
 
-  // ---------------------------
-  // IMAGE HANDLER
-  // ---------------------------
+  // ---------------------------------------------------------------
+  // HANDLE IMAGE UPLOAD (SLIDER / TRENDING)
+  // ---------------------------------------------------------------
   const handleUpload = async (e, type, index) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -93,13 +91,14 @@ export default function AdminHome() {
         setContent({ ...content, trending: arr });
       }
 
-      alert("Image Uploaded Successfully!");
+      alert("Image uploaded successfully!");
     } catch (err) {
+      console.error(err);
       alert("Upload failed: " + err.message);
     }
   };
 
-  // Add new slider slot
+  // ADD NEW SLIDER
   const addSliderImage = () => {
     setContent({
       ...content,
@@ -107,7 +106,7 @@ export default function AdminHome() {
     });
   };
 
-  // Add trending item
+  // ADD TRENDING ITEM
   const addTrendingItem = () => {
     setContent({
       ...content,
@@ -121,7 +120,7 @@ export default function AdminHome() {
       await setDoc(refDoc, content, { merge: true });
       alert("Home Page Updated!");
     } catch (err) {
-      alert("Saving Failed: " + err.message);
+      alert("Saving failed: " + err.message);
     }
   };
 

@@ -1,12 +1,12 @@
 // admin/src/pages/ProductAdmin.js
 import React, { useState } from "react";
-import { db } from "../firebase";
+import { db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import "./ProductAdmin.css";
 
 // CLOUDINARY CONFIG
-const CLOUDINARY_CLOUD = "dshnpehlq";
-const CLOUDINARY_UNSIGNED_PRESET = "unsigned_homepage_preset";
+const CLOUDINARY_CLOUD = CLOUDINARY_CLOUD_NAME || "dshnpehlq";
+const CLOUDINARY_UNSIGNED_PRESET = CLOUDINARY_UPLOAD_PRESET || "unsigned_homepage_preset";
 
 export default function ProductAdmin() {
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ export default function ProductAdmin() {
   const productsRef = collection(db, "products");
 
   // ----------------------------------------------
-  // VERIFY URL (Fix: image sometimes not loading)
+  // VERIFY IMAGE URL
   // ----------------------------------------------
   const verifyImageURL = (url) => {
     return new Promise((resolve) => {
@@ -35,13 +35,12 @@ export default function ProductAdmin() {
       img.onload = () => resolve(true);
       img.onerror = () => resolve(false);
 
-      // slow internet fallback
-      setTimeout(() => resolve(true), 2000);
+      setTimeout(() => resolve(true), 2000); // fallback
     });
   };
 
   // ----------------------------------------------
-  // CLOUDINARY UPLOAD (Stable, Retry, Fix all bugs)
+  // UPLOAD TO CLOUDINARY WITH RETRY
   // ----------------------------------------------
   const uploadToCloudinary = async (file) => {
     const apiUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
@@ -49,8 +48,6 @@ export default function ProductAdmin() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", CLOUDINARY_UNSIGNED_PRESET);
-
-    // force unique file ID (prevents overwrite)
     formData.append("public_id", "img_" + Date.now() + "_" + Math.random());
 
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -61,21 +58,20 @@ export default function ProductAdmin() {
         const data = await res.json();
         if (!data.secure_url) continue;
 
-        // verify working link
         const ok = await verifyImageURL(data.secure_url);
         if (!ok) continue;
 
         return data.secure_url;
       } catch (err) {
-        console.log("Cloudinary error attempt:", attempt);
+        console.warn("Cloudinary upload attempt failed:", attempt);
       }
     }
 
-    throw new Error("Upload failed due to slow/unstable internet.");
+    throw new Error("Upload failed due to unstable internet.");
   };
 
   // ----------------------------------------------
-  // MULTIPLE FILE SELECT
+  // HANDLE MULTIPLE FILES
   // ----------------------------------------------
   const handleFiles = async (e) => {
     const files = Array.from(e.target.files);
@@ -84,15 +80,19 @@ export default function ProductAdmin() {
     setLoading(true);
 
     try {
-      const uploaded = [];
+      const uploadedUrls = [];
       for (const file of files) {
         const url = await uploadToCloudinary(file);
-        uploaded.push(url);
+        uploadedUrls.push(url);
       }
 
-      setProduct((p) => {
-        const all = [...p.images, ...uploaded];
-        return { ...p, images: all, image: all[0] };
+      setProduct((prev) => {
+        const allImages = [...prev.images, ...uploadedUrls];
+        return {
+          ...prev,
+          images: allImages,
+          image: allImages[0] || ""
+        };
       });
 
       alert("Images uploaded successfully ✔");
@@ -108,12 +108,12 @@ export default function ProductAdmin() {
   // REMOVE IMAGE
   // ----------------------------------------------
   const removeImage = (index) => {
-    setProduct((p) => {
-      const updated = [...p.images];
+    setProduct((prev) => {
+      const updated = [...prev.images];
       updated.splice(index, 1);
 
       return {
-        ...p,
+        ...prev,
         images: updated,
         image: updated[0] || ""
       };
@@ -124,15 +124,19 @@ export default function ProductAdmin() {
   // SET PRIMARY IMAGE
   // ----------------------------------------------
   const setAsPrimary = (index) => {
-    setProduct((p) => {
-      const arr = [...p.images];
-      const [selected] = arr.splice(index, 1);
-      return { ...p, images: [selected, ...arr], image: selected };
+    setProduct((prev) => {
+      const arr = [...prev.images];
+      const selected = arr.splice(index, 1)[0];
+      return {
+        ...prev,
+        images: [selected, ...arr],
+        image: selected
+      };
     });
   };
 
   // ----------------------------------------------
-  // SAVE PRODUCT TO FIRESTORE
+  // SAVE PRODUCT
   // ----------------------------------------------
   const handleSaveProduct = async () => {
     if (!product.name.trim()) return alert("Product name required.");
@@ -155,9 +159,9 @@ export default function ProductAdmin() {
         createdAt: serverTimestamp()
       };
 
-      const doc = await addDoc(productsRef, payload);
+      const docRef = await addDoc(productsRef, payload);
 
-      alert("Product saved ✔ (ID: " + doc.id + ")");
+      alert("Product saved ✔ (ID: " + docRef.id + ")");
 
       // RESET FORM
       setProduct({
@@ -178,6 +182,9 @@ export default function ProductAdmin() {
     setLoading(false);
   };
 
+  // ----------------------------------------------
+  // UI
+  // ----------------------------------------------
   return (
     <div className="admin-form">
       <h2>Add Product</h2>

@@ -1,6 +1,6 @@
 // admin/src/pages/ProductsAdminPage.js
 import React, { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../firebase";
 import {
   collection,
   getDocs,
@@ -13,13 +13,11 @@ import {
 } from "firebase/firestore";
 import "./ProductList.css";
 
-/**
- * Cloudinary config (keep your existing values)
- */
-const CLOUDINARY_CLOUD = "dshnpehlq";
-const CLOUDINARY_UNSIGNED_PRESET = "unsigned_homepage_preset";
+/* ---------- Cloudinary config ---------- */
+const CLOUDINARY_CLOUD = CLOUDINARY_CLOUD_NAME || "dshnpehlq";
+const CLOUDINARY_UNSIGNED_PRESET = CLOUDINARY_UPLOAD_PRESET || "unsigned_homepage_preset";
 
-/* ---------- categories list (same as client) ---------- */
+/* ---------- categories ---------- */
 const CATEGORIES = [
   "all",
   "maggam-work",
@@ -37,62 +35,38 @@ const CATEGORIES = [
 
 const placeholder = "/placeholder.jpg";
 
-/* ---------- small helper to verify uploaded url actually loads ---------- */
+/* ---------- verify image URL ---------- */
 const verifyImageURL = (url, timeout = 2500) =>
   new Promise((resolve) => {
     if (!url) return resolve(false);
     const img = new Image();
     let done = false;
-    img.onload = () => {
-      if (!done) {
-        done = true;
-        resolve(true);
-      }
-    };
-    img.onerror = () => {
-      if (!done) {
-        done = true;
-        resolve(false);
-      }
-    };
-    // fallback: if it takes too long we assume ok (network may be slow)
-    setTimeout(() => {
-      if (!done) {
-        done = true;
-        resolve(true);
-      }
-    }, timeout);
+    img.onload = () => { if (!done) { done = true; resolve(true); } };
+    img.onerror = () => { if (!done) { done = true; resolve(false); } };
+    setTimeout(() => { if (!done) { done = true; resolve(true); } }, timeout);
     img.src = url;
   });
 
-/* ---------- upload helper with retries ---------- */
+/* ---------- upload to Cloudinary ---------- */
 async function uploadToCloudinary(file) {
   if (!file) return null;
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", CLOUDINARY_UNSIGNED_PRESET);
-  // add a simple public id to reduce overwrite chance
   formData.append("public_id", `ssf_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
 
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const res = await fetch(url, { method: "POST", body: formData });
       if (!res.ok) {
-        // small delay before retry
         await new Promise((r) => setTimeout(r, 400 * attempt));
         continue;
       }
       const data = await res.json();
-      if (!data || !data.secure_url) {
-        await new Promise((r) => setTimeout(r, 300 * attempt));
-        continue;
-      }
+      if (!data?.secure_url) { await new Promise((r) => setTimeout(r, 300 * attempt)); continue; }
       const ok = await verifyImageURL(data.secure_url);
-      if (!ok && attempt < 3) {
-        await new Promise((r) => setTimeout(r, 400 * attempt));
-        continue;
-      }
+      if (!ok && attempt < 3) { await new Promise((r) => setTimeout(r, 400 * attempt)); continue; }
       return data.secure_url;
     } catch (err) {
       if (attempt < 3) await new Promise((r) => setTimeout(r, 400 * attempt));
@@ -102,19 +76,19 @@ async function uploadToCloudinary(file) {
   throw new Error("Upload failed after retries");
 }
 
-/* ---------- Edit modal component (inline) ---------- */
+/* ---------- Edit modal ---------- */
 function EditModal({ product, onClose, onSaved }) {
-  const [form, setForm] = useState(product || null);
+  const [form, setForm] = useState({ ...product });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => setForm(product || null), [product]);
+  useEffect(() => setForm({ ...product }), [product]);
 
   if (!form) return null;
 
   const changeField = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const addImages = async (files) => {
-    if (!files || files.length === 0) return;
+    if (!files?.length) return;
     setLoading(true);
     try {
       const arr = Array.from(files);
@@ -123,7 +97,11 @@ function EditModal({ product, onClose, onSaved }) {
         const url = await uploadToCloudinary(f);
         uploaded.push(url);
       }
-      setForm((p) => ({ ...p, images: [...(p.images || []), ...uploaded], image: (p.images && p.images[0]) || uploaded[0] || p.image }));
+      setForm((p) => {
+        const currentImages = Array.isArray(p.images) ? p.images : [];
+        const firstImage = currentImages[0] || uploaded[0] || p.image || "";
+        return { ...p, images: [...currentImages, ...uploaded], image: firstImage };
+      });
     } catch (err) {
       alert("Image upload failed: " + err.message);
     }
@@ -132,7 +110,7 @@ function EditModal({ product, onClose, onSaved }) {
 
   const removeImageAt = (idx) => {
     setForm((p) => {
-      const imgs = [...(p.images || [])];
+      const imgs = Array.isArray(p.images) ? [...p.images] : [];
       imgs.splice(idx, 1);
       return { ...p, images: imgs, image: imgs[0] || "" };
     });
@@ -140,7 +118,7 @@ function EditModal({ product, onClose, onSaved }) {
 
   const setPrimary = (idx) => {
     setForm((p) => {
-      const imgs = [...(p.images || [])];
+      const imgs = Array.isArray(p.images) ? [...p.images] : [];
       const [picked] = imgs.splice(idx, 1);
       return { ...p, images: [picked, ...imgs], image: picked };
     });
@@ -224,7 +202,7 @@ function EditModal({ product, onClose, onSaved }) {
   );
 }
 
-/* ---------- main admin page component ---------- */
+/* ---------- main admin page ---------- */
 export default function ProductsAdminPage() {
   const [products, setProducts] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -240,10 +218,7 @@ export default function ProductsAdminPage() {
       const snap = await getDocs(q);
       const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setProducts(arr);
-
-      // prepare recent list (most recent products)
-      const rec = arr.slice(0, 12);
-      setRecent(rec);
+      setRecent(arr.slice(0, 12));
     } catch (err) {
       console.error(err);
       alert("Failed to load products: " + err.message);
@@ -251,17 +226,14 @@ export default function ProductsAdminPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchAll();
-    // (optional) you could add a real-time listener with onSnapshot for live updates
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const openEdit = (p) => setEditing(p);
   const closeEdit = () => setEditing(null);
   const refresh = () => fetchAll();
 
   const deleteProduct = async (p) => {
-    if (!window.confirm(`Delete "${p.name}" permanently? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${p.name}" permanently?`)) return;
     try {
       await deleteDoc(doc(db, "products", p.id));
       setProducts((s) => s.filter(x => x.id !== p.id));
@@ -288,9 +260,8 @@ export default function ProductsAdminPage() {
     try {
       setLoading(true);
       const url = await uploadToCloudinary(file);
-      // add as new primary image (or you can push to images list)
       const ref = doc(db, "products", p.id);
-      const newImages = [url, ...(p.images || [])];
+      const newImages = [url, ...(Array.isArray(p.images) ? p.images : [])];
       await updateDoc(ref, { images: newImages, image: url, updatedAt: serverTimestamp() });
       refresh();
       alert("Image changed");
@@ -340,11 +311,11 @@ export default function ProductsAdminPage() {
                     <h4>{p.title || p.name}</h4>
                     <div className="price">₹{p.price} <small className="orig">₹{p.original}</small></div>
                     <div className="stock">{p.stockQty > 0 ? `${p.stockQty} in stock` : "Out of stock"}</div>
-                    <p className="desc">{p.description && (p.description.length > 120 ? p.description.slice(0, 120) + "..." : p.description)}</p>
+                    <p className="desc">{p.description?.length > 120 ? p.description.slice(0, 120) + "..." : p.description}</p>
 
                     <div className="thumb-row">
-                      {(p.images || []).slice(0, 4).map((u, i) => (
-                        <img key={i} src={u} alt={`t-${i}`} className="thumb" />
+                      {(Array.isArray(p.images) ? p.images : []).slice(0, 4).map((u, i) => (
+                        <img key={i} src={u || placeholder} alt={`t-${i}`} className="thumb" />
                       ))}
                     </div>
 

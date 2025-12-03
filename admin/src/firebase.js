@@ -1,16 +1,17 @@
 ﻿// admin/src/firebase.js
+
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBF4BMm9nSbgsd4Y-a5vlnXdmdhWlZTZGs",
-  authDomain: "ssfashion-14f5f.firebaseapp.com",
-  projectId: "ssfashion-14f5f",
-  storageBucket: "ssfashion-14f5f.appspot.com",
-  messagingSenderId: "1036102703602",
-  appId: "1:1036102703602:web:6d0d99bc915a2ffdf0736b"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_ID,
+  appId: process.env.REACT_APP_FIREBASE_APPID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -18,3 +19,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Cloudinary Config (Frontend Safe)
+export const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+export const CLOUDINARY_UPLOAD_PRESET = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
