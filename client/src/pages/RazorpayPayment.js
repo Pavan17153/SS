@@ -78,15 +78,22 @@ export default function RazorpayPayment({
       const amountForRazor = orderData.amount || Math.round((totalAmount || 0) * 100);
 
       // Select key (test vs live). Put keys in your .env: REACT_APP_RAZORPAY_KEY_ID_TEST / _LIVE
-      const razorpayKey =
-        process.env.NODE_ENV === "production"
-          ? process.env.REACT_APP_RAZORPAY_KEY_ID_LIVE
-          : process.env.REACT_APP_RAZORPAY_KEY_ID_TEST;
+      // const razorpayKey =
+      //   process.env.NODE_ENV === "production"
+      //     ? process.env.REACT_APP_RAZORPAY_KEY_ID_LIVE
+      //     : process.env.REACT_APP_RAZORPAY_KEY_ID_TEST;
 
-      if (!razorpayKey) {
-        alert("Razorpay Key missing in .env");
-        return;
-      }
+      // if (!razorpayKey) {
+      //   alert("Razorpay Key missing in .env");
+      //   return;
+      // }
+// FIXED: always test mode during development
+const razorpayKey = process.env.REACT_APP_RAZORPAY_KEY_ID_TEST;
+
+if (!razorpayKey) {
+  alert("Razorpay Test Key missing in .env");
+  return;
+}
 
       const options = {
         key: razorpayKey,
