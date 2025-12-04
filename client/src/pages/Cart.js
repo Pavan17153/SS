@@ -1,76 +1,105 @@
-﻿import { useState } from "react";
+﻿// src/components/Cart.js
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { emitCartUpdate, cartEvent } from "./cartEvents";   // ✅ FIXED IMPORT
 import { FaTrash } from "react-icons/fa";
+import { auth } from "../firebase";
 import "../Cart.css";
 
 export default function Cart() {
   const nav = useNavigate();
-  const [cart, setCart] = useState(JSON.parse(localStorage.getItem("ssf_cart") || "[]"));
+  const [cart, setCart] = useState([]);
   const [undoItem, setUndoItem] = useState(null);
   const [undoVisible, setUndoVisible] = useState(false);
 
-  // TOTAL PRICE
+  // Load correct cart
+  const loadCart = () => {
+    const email = auth.currentUser?.email;
+    const key = email ? `ssf_cart_${email}` : "ssf_cart";
+    const stored = JSON.parse(localStorage.getItem(key) || "[]");
+    setCart(stored);
+  };
+
+  useEffect(() => {
+    loadCart();
+
+    // Listen for login/logout
+    const unsub = auth.onAuthStateChanged(() => loadCart());
+
+    // Listen for unified cart update event
+    const handler = () => loadCart();
+    cartEvent.addEventListener("cartUpdated", handler);
+
+    return () => {
+      unsub();
+      cartEvent.removeEventListener("cartUpdated", handler);
+    };
+  }, []);
+
+  // TOTALS
   const total = cart.reduce((s, i) => s + (i.price * (i.qty || 1)), 0);
 
-  // SHIPPING LOGIC
+  // SHIPPING RULES
   let shipping = 0;
-
   if (cart.length > 0) {
-    if (total <= 1500) {
-      shipping = 60;
-    } else if (total > 1500 && total <= 3000) {
-      shipping = 120;
-    } else if (total > 3000 && total <= 4500) {
-      shipping = 180;
-    } else {
-      shipping = 240; // for 4500–6000
-    }
+    if (total <= 1500) shipping = 60;
+    else if (total <= 3000) shipping = 120;
+    else if (total <= 4500) shipping = 180;
+    else shipping = 240;
   }
 
   const grandTotal = total + shipping;
 
+  // SAVE CART + NOTIFY NAVBAR
   const saveCart = (updated) => {
-    localStorage.setItem("ssf_cart", JSON.stringify(updated));
+    const email = auth.currentUser?.email;
+    const key = email ? `ssf_cart_${email}` : "ssf_cart";
+    localStorage.setItem(key, JSON.stringify(updated));
     setCart(updated);
+    emitCartUpdate();  // 🔥 Notify navbar
   };
 
+  // REMOVE ITEM
   const removeItem = (index) => {
     const item = cart[index];
-    const updatedCart = cart.filter((_, i) => i !== index);
+    const updated = cart.filter((_, i) => i !== index);
+
     setUndoItem({ item, index });
     setUndoVisible(true);
-    saveCart(updatedCart);
+    saveCart(updated);
 
     setTimeout(() => setUndoVisible(false), 5000);
   };
 
+  // UNDO
   const undoDelete = () => {
-    if (undoItem) {
-      const updatedCart = [...cart];
-      updatedCart.splice(undoItem.index, 0, undoItem.item);
-      saveCart(updatedCart);
-      setUndoVisible(false);
-      setUndoItem(null);
-    }
+    if (!undoItem) return;
+    const updated = [...cart];
+    updated.splice(undoItem.index, 0, undoItem.item);
+    saveCart(updated);
+    setUndoItem(null);
+    setUndoVisible(false);
   };
 
+  // DECREASE QTY
   const decreaseQty = (index) => {
     const updated = [...cart];
     if (updated[index].qty > 1) {
       updated[index].qty -= 1;
+      saveCart(updated);
     } else {
       removeItem(index);
-      return;
     }
-    saveCart(updated);
   };
 
+  // INCREASE QTY
   const increaseQty = (index) => {
     const updated = [...cart];
     updated[index].qty += 1;
     saveCart(updated);
   };
 
+  // CHECKOUT
   const checkout = () => {
     localStorage.setItem("ssf_checkout_total", grandTotal);
     nav("/checkout");
@@ -79,7 +108,7 @@ export default function Cart() {
   return (
     <div className="cart-container">
 
-      {/* 🔙 BACK BUTTON */}
+      {/* BACK BUTTON */}
       <button
         onClick={() => nav("/categories")}
         style={{
@@ -110,7 +139,7 @@ export default function Cart() {
       ) : (
         <div className="cart-grid">
 
-          {/* LEFT SIDE ITEMS */}
+          {/* LEFT ITEMS */}
           <div className="cart-left">
             <div className="cart-table-header">
               <span>Remove</span>

@@ -1,19 +1,23 @@
-/* NAVBAR MAIN */
+/* ================================
+   NAVBAR MAIN CONTAINER
+================================ */
 .navbar {
   width: 100%;
-  padding: 14px 40px;
+  padding: 14px 30px;
   background: #ffffff;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid #f0f0f0;
   position: sticky;
   top: 0;
-  z-index: 100;
-  box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
+  z-index: 1000;
+  box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
 }
 
-/* LEFT SIDE */
+/* ================================
+   LEFT LOGO + BRAND
+================================ */
 .navbar-left {
   display: flex;
   align-items: center;
@@ -28,46 +32,52 @@
 
 .brand-name {
   font-size: 22px;
-  font-weight: bold;
-  color: #333;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  color: #222;
 }
 
-/* RIGHT SIDE MENU */
+/* ================================
+   RIGHT SIDE NAV ITEMS
+================================ */
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 26px;
 }
 
+/* LINKS */
 .nav-link {
   text-decoration: none;
-  font-size: 17px;
+  font-size: 16px;
   color: #444;
   font-weight: 500;
-  transition: 0.3s;
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  transition: 0.25s;
 }
 
 .nav-link:hover {
-  color: #ffffff;
   background: #ff4d6d;
+  color: white;
 }
 
-/* ICONS */
+/* ================================
+   ICONS
+================================ */
 .icon {
   font-size: 20px;
   cursor: pointer;
   color: #444;
-  transition: 0.3s;
+  transition: 0.25s;
 }
 
 .icon:hover {
   color: #ff4d6d;
 }
 
-/* DROPDOWN */
+/* ================================
+   DROPDOWN MENU
+================================ */
 .dropdown {
   position: relative;
   cursor: pointer;
@@ -76,65 +86,69 @@
 .dropdown-title {
   display: flex;
   align-items: center;
-  gap: 5px;
-}
-
-.arrow-icon {
-  transition: 0.3s;
-}
-
-.dropdown:hover .arrow-icon {
-  transform: rotate(180deg);
+  gap: 6px;
 }
 
 .dropdown-menu {
   position: absolute;
-  top: 35px;
+  top: 38px;
   left: 0;
-  background: #ffffff;
-  border-radius: 8px;
+  background: white;
+  border-radius: 10px;
   padding: 12px 0;
-  box-shadow: 0px 5px 12px rgba(0,0,0,0.15);
-  width: 190px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+  width: 200px;
   display: flex;
   flex-direction: column;
-  z-index: 200;
-  animation: fadeIn 0.2s ease-out;
+  z-index: 1000;
+  animation: fadeDown 0.18s ease-out;
 }
 
-.dropdown-menu a {
-  padding: 10px 15px;
+.dropdown-menu span {
+  padding: 10px 16px;
   font-size: 15px;
-  text-decoration: none;
-  color: #333;
-  transition: 0.2s;
+  color: #444;
+  cursor: pointer;
+  transition: 0.25s;
 }
 
-.dropdown-menu a:hover {
-  background: #ffe3ea;
+.dropdown-menu span:hover {
+  background: #ffe4eb;
   color: #ff003c;
 }
 
-/* MONEY + CART */
+/* Smooth dropdown animation */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================
+   CART + MONEY BOX
+================================ */
 .money-cart {
   display: flex;
   align-items: center;
   gap: 10px;
+  background: #fff3f6;
+  padding: 6px 14px;
+  border-radius: 25px;
   cursor: pointer;
+  transition: 0.3s;
+}
+
+.money-cart:hover {
+  background: #ffe1e9;
 }
 
 .money-text {
-  font-size: 17px;
   font-weight: 600;
-  color: #333;
+  font-size: 16px;
+  color: #222;
 }
 
 .cart-icon-wrapper {
   position: relative;
-}
-
-.cart-icon {
-  font-size: 22px;
 }
 
 .cart-count {
@@ -152,8 +166,78 @@
   align-items: center;
 }
 
-/* FADE IN ANIMATION */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ================================
+   MOBILE VIEW (VERY IMPORTANT)
+================================ */
+@media (max-width: 850px) {
+  .navbar {
+    padding: 12px 18px;
+  }
+
+  .navbar-right {
+    display: none; /* hide desktop menu */
+  }
+
+  /* MOBILE HAMBURGER */
+  .mobile-menu-btn {
+    display: block;
+    font-size: 26px;
+    cursor: pointer;
+    color: #333;
+  }
+
+  /* MOBILE DROPDOWN FULL SCREEN MENU */
+  .mobile-menu {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 75%;
+    height: 100vh;
+    background: white;
+    z-index: 2000;
+    padding: 40px 20px;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.12);
+    transition: 0.4s ease-in-out;
+  }
+
+  .mobile-menu.active {
+    right: 0;
+  }
+
+  .mobile-link {
+    display: block;
+    font-size: 18px;
+    padding: 14px 0;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #eee;
+  }
+
+  .mobile-link:hover {
+    color: #ff003c;
+  }
+
+  /* MOBILE CART */
+  .mobile-cart {
+    margin-top: 20px;
+    padding: 12px;
+    background: #fff3f6;
+    border-radius: 12px;
+    font-size: 18px;
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .brand-name {
+    font-size: 19px;
+  }
+
+  .logo {
+    width: 38px;
+    height: 38px;
+  }
 }

@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
+﻿// src/pages/Orders.js
+import React, { useEffect, useState } from "react";
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -49,7 +50,7 @@ export default function Orders() {
           return {
             id: doc.id,
             ...d,
-            status: d.status?.charAt(0).toUpperCase() + d.status?.slice(1).toLowerCase(),
+            status: (d.status || "").charAt(0).toUpperCase() + (d.status || "").slice(1).toLowerCase(),
           };
         });
 
@@ -77,33 +78,20 @@ export default function Orders() {
 
     try {
       const ref = doc(db, "orders", cancelPopup.orderId);
-
-      // Check if the order exists
       const snapshot = await getDoc(ref);
       if (!snapshot.exists()) throw new Error("Order does not exist");
 
-      // Only allow cancel if not shipped or delivered
-      const currentStatus = snapshot.data().status?.toLowerCase() || "";
+      const currentStatus = (snapshot.data().status || "").toLowerCase();
       if (["shipped", "delivered"].includes(currentStatus)) {
         alert("Cannot cancel an order that is already shipped or delivered.");
         setCancelPopup({ show: false, orderId: null });
         return;
       }
 
-      // Update Firestore
-      await updateDoc(ref, { status: "Cancelled" }); // <-- works with Firestore rules now
+      await updateDoc(ref, { status: "Cancelled" });
 
-      // Update local state
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o
-        )
-      );
-      setFilteredOrders((prev) =>
-        prev.map((o) =>
-          o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o
-        )
-      );
+      setOrders((prev) => prev.map((o) => (o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o)));
+      setFilteredOrders((prev) => prev.map((o) => (o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o)));
 
       setCancelPopup({ show: false, orderId: null });
       setSuccessPopup(true);
@@ -120,7 +108,9 @@ export default function Orders() {
 
   const isStepActive = (currentStatus, step) => {
     const rank = { ordered: 1, processing: 2, shipped: 3, delivered: 4 };
-    return rank[currentStatus.toLowerCase()] >= rank[step.toLowerCase()];
+    // guard:
+    const cur = (currentStatus || "").toLowerCase();
+    return (rank[cur] || 0) >= (rank[step.toLowerCase()] || 0);
   };
 
   if (!userEmail) return <p className="orders-center">Please login to see your orders.</p>;
@@ -161,6 +151,8 @@ export default function Orders() {
           <label>Status:</label>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="orders-filter-select">
             <option>All</option>
+            <option>Pending</option>
+            <option>Processing</option>
             <option>Unshipped</option>
             <option>Shipped</option>
             <option>Delivered</option>
@@ -188,13 +180,13 @@ export default function Orders() {
                     <span className="cancel-tag">Cancelled</span>
                   )}
 
-                  {order.address && (
+                  {order.billingDetails && (
                     <p className="address-text">
                       <strong>Shipping Address:</strong><br />
-                      {order.address.name}<br />
-                      {order.address.street}, {order.address.city}<br />
-                      {order.address.state} - {order.address.zip}<br />
-                      Phone: {order.address.phone}
+                      {order.billingDetails.firstName} {order.billingDetails.lastName}<br />
+                      {order.billingDetails.address1}, {order.billingDetails.city}<br />
+                      {order.billingDetails.state} - {order.billingDetails.pin}<br />
+                      Phone: {order.billingDetails.phone}
                     </p>
                   )}
                 </div>
@@ -206,7 +198,7 @@ export default function Orders() {
 
               <div className="order-items">
                 <strong>Items:</strong>
-                {order.items.map((item, i) => (
+                {(order.items || []).map((item, i) => (
                   <div key={i} className="order-item" onClick={() => setPopupImage(item.image)}>
                     <img src={item.image} alt={item.name} className="order-img" />
                     <div>

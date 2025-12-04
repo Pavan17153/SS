@@ -1,8 +1,9 @@
 ﻿// client/src/pages/Categories.js
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../Categories.css";
 import { db } from "../firebase";
+import { emitCartUpdate } from "./cartEvents";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 
 // Function to safely get primary image
@@ -17,6 +18,8 @@ const getPrimaryImage = (p) => {
 
 export default function CategoriesPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("maggam-work");
   const [searchText, setSearchText] = useState("");
@@ -39,6 +42,15 @@ export default function CategoriesPage() {
     { id: "tops", label: "Tops" },
     { id: "kidswear", label: "Kids Wear" },
   ];
+
+  // ⭐ NEW — Read category from URL
+  useEffect(() => {
+    const urlCat = new URLSearchParams(location.search).get("cat");
+    if (urlCat) {
+      setSelectedCategory(urlCat);
+      setCurrentPage(1);
+    }
+  }, [location.search]);
 
   // Fetch products from Firestore
   useEffect(() => {
@@ -74,6 +86,7 @@ export default function CategoriesPage() {
         console.error("Failed to load products:", err);
       }
     };
+
     fetchProducts();
   }, []);
 
@@ -95,50 +108,47 @@ export default function CategoriesPage() {
     if (num >= 1 && num <= totalPages) setCurrentPage(num);
   };
 
-  // Add product to cart
-const addToCart = (product) => {
-  let cart = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
-  
-  // Make sure stock is a number
-  const stockQty = Number(product.stockQty) || 0;
+  // Add product to cart with stock check
+  const addToCart = (product) => {
+    let cart = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
+    const stockQty = Number(product.stockQty) || 0;
 
-  // Find product in cart by unique ID
-  const existingIndex = cart.findIndex((c) => c.id === product.id);
+    const existingIndex = cart.findIndex((c) => c.id === product.id);
 
-  if (existingIndex !== -1) {
-    const existingItem = cart[existingIndex];
-    
-    // Check stock
-    if ((existingItem.qty || 1) >= stockQty) {
-      alert(`Only ${stockQty} items available for ${product.name}`);
-      return;
+    if (existingIndex !== -1) {
+      const existingItem = cart[existingIndex];
+
+      if ((existingItem.qty || 1) >= stockQty) {
+        alert(`Only ${stockQty} items available for ${product.name}`);
+        return;
+      }
+
+      const updatedCart = [...cart];
+      updatedCart[existingIndex] = {
+        ...existingItem,
+        qty: (existingItem.qty || 1) + 1,
+        stock: stockQty,
+      };
+      cart = updatedCart;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        qty: 1,
+        image: getPrimaryImage(product),
+        stock: stockQty,
+      });
     }
 
-    const updatedCart = [...cart];
-    updatedCart[existingIndex] = {
-      ...existingItem,
-      qty: (existingItem.qty || 1) + 1,
-      stock: stockQty, // update stock for this specific product
-    };
-    cart = updatedCart;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      qty: 1,
-      image: getPrimaryImage(product),
-      stock: stockQty, // save stock
-    });
-  }
+    localStorage.setItem("ssf_cart", JSON.stringify(cart));
+    emitCartUpdate();
 
-  localStorage.setItem("ssf_cart", JSON.stringify(cart));
-  window.dispatchEvent(new Event("storage"));
+    setSuccessMsg(`${product.name} added to cart!`);
+    setTimeout(() => setSuccessMsg(""), 2500);
+  };
 
-  setSuccessMsg(`${product.name} added to cart!`);
-  setTimeout(() => setSuccessMsg(""), 2500);
-};
-
+  // Count products per category
   const categoryCount = (catId) =>
     products.filter((p) => p.category === catId).length;
 
@@ -209,7 +219,6 @@ const addToCart = (product) => {
                   alt={p.name}
                   className="product-img"
                   onError={(e) => {
-                    // Auto-retry image after 1.5 seconds (Cloudinary delay fix)
                     setTimeout(() => {
                       e.target.src = getPrimaryImage(p);
                     }, 1500);
@@ -217,7 +226,10 @@ const addToCart = (product) => {
                   onClick={() => navigate(`/product/${p.id}`)}
                 />
 
-                <h5 className="product-name" onClick={() => navigate(`/product/${p.id}`)}>
+                <h5
+                  className="product-name"
+                  onClick={() => navigate(`/product/${p.id}`)}
+                >
                   {p.name}
                 </h5>
 
