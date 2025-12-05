@@ -9,13 +9,12 @@ import {
   fetchSignInMethodsForEmail,
 } from "firebase/auth";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
-import RazorpayPayment from "./RazorpayPayment"; // adjust path if different
+import RazorpayPayment from "./RazorpayPayment";
 import EmailExistPopup from "./EmailExistPopup";
 import LoginPopup from "./LoginPopup";
 import "../Checkout.css";
 import "./PopupStyles.css";
 
-/* INDIA_STATES and generateRandomPassword as before */
 const INDIA_STATES = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana",
   "Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur",
@@ -32,7 +31,21 @@ function generateRandomPassword(length = 12) {
 
 export default function Checkout() {
   const [userEmail, setUserEmail] = useState("");
-  const [cart, setCart] = useState(JSON.parse(localStorage.getItem("ssf_cart") || "[]"));
+
+  const loadCorrectCart = () => {
+    const email = auth.currentUser?.email;
+    const key = email ? `ssf_cart_${email}` : "ssf_cart";
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  };
+
+  const [cart, setCart] = useState(loadCorrectCart());
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, () => {
+      setCart(loadCorrectCart());
+    });
+    return () => unsub();
+  }, []);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -54,15 +67,16 @@ export default function Checkout() {
   const [stateSuggestions, setStateSuggestions] = useState([]);
   const [loadingSave, setLoadingSave] = useState(false);
 
-  // popups
   const [emailExistPopupVisible, setEmailExistPopupVisible] = useState(false);
   const [loginPopupVisible, setLoginPopupVisible] = useState(false);
   const [loginPrefillEmail, setLoginPrefillEmail] = useState("");
-  const [infoMessage, setInfoMessage] = useState(null); // { type, text }
+  const [infoMessage, setInfoMessage] = useState(null);
   const [proceedToPayment, setProceedToPayment] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [accountCreatedEmail, setAccountCreatedEmail] = useState("");
 
   const total = cart.reduce((s, i) => s + i.price * (i.qty || 1), 0);
+
   let shipping = 0;
   if (cart.length > 0) {
     if (total <= 1500) shipping = 60;
@@ -70,22 +84,23 @@ export default function Checkout() {
     else if (total <= 4500) shipping = 180;
     else shipping = 240;
   }
+
   const grandTotal = total + shipping;
 
-  // auth state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUserEmail(user.email);
         setForm(prev => ({ ...prev, email: user.email }));
+        setCart(loadCorrectCart());
       } else {
         setUserEmail("");
+        setCart(loadCorrectCart());
       }
     });
     return () => unsub();
   }, []);
 
-  // state suggestions
   useEffect(() => {
     const q = (form.state || "").trim().toLowerCase();
     if (!q) return setStateSuggestions([]);
@@ -105,18 +120,21 @@ export default function Checkout() {
         return { ok: false, field: key };
       }
     }
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRe.test(form.email)) return { ok: false, field: "email" };
-    const phoneRe = /^\d{7,15}$/;
-    if (!phoneRe.test(form.phone.replace(/\D/g, ""))) return { ok: false, field: "phone" };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return { ok: false, field: "email" };
+    if (!/^\d{7,15}$/.test(form.phone.replace(/\D/g, ""))) return { ok: false, field: "phone" };
     if (!agreeTerms) return { ok: false, field: "agreeTerms" };
     if (!cart || cart.length === 0) return { ok: false, field: "cart" };
     return { ok: true };
   };
 
-  // click Pay Now: pre-check email registration
+  // ⭐ NEW — auto-hide popup message after 7 seconds
+  useEffect(() => {
+    if (!infoMessage) return;
+    const timer = setTimeout(() => setInfoMessage(null), 7000);
+    return () => clearTimeout(timer);
+  }, [infoMessage]);
+
   const handlePayNowClicked = async () => {
-    // clear prior info
     setInfoMessage(null);
 
     const v = validate();
@@ -127,15 +145,11 @@ export default function Checkout() {
       return;
     }
 
-    const email = (form.email || "").trim().toLowerCase();
-    if (!email) {
-      setInfoMessage({ type: "error", text: "Please provide a valid email." });
-      return;
-    }
+    const email = form.email.trim().toLowerCase();
+    if (!email) return setInfoMessage({ type: "error", text: "Please provide a valid email." });
 
-    // If already logged in as same email -> go to payment directly
     const currentUser = auth.currentUser;
-    if (currentUser && currentUser.email && currentUser.email.toLowerCase() === email) {
+    if (currentUser && currentUser.email.toLowerCase() === email) {
       setProceedToPayment(true);
       return;
     }
@@ -143,27 +157,22 @@ export default function Checkout() {
     setCheckingEmail(true);
 
     try {
-      // fetch sign-in methods to see if email already exists
       const methods = await fetchSignInMethodsForEmail(auth, email);
-
       if (methods && methods.length > 0) {
-        // email registered -> ask user to login
         setLoginPrefillEmail(email);
         setEmailExistPopupVisible(true);
         setCheckingEmail(false);
         return;
       }
 
-      // email not registered -> create account silently then start payment
       const randomPw = generateRandomPassword(12);
       try {
         await createUserWithEmailAndPassword(auth, email, randomPw);
-      } catch (createErr) {
-        // If create fails (rare), attempt signIn with same credentials (unlikely) — if that also fails, open login popup
+        setAccountCreatedEmail(email);
+      } catch {
         try {
           await signInWithEmailAndPassword(auth, email, randomPw);
-        } catch (signinErr) {
-          // Auto account creation & login failed -> ask user to login manually (prefill email)
+        } catch {
           setLoginPrefillEmail(email);
           setLoginPopupVisible(true);
           setCheckingEmail(false);
@@ -171,20 +180,17 @@ export default function Checkout() {
         }
       }
 
-      // send reset so user can set password (best practice)
-      try { await sendPasswordResetEmail(auth, email); } catch (err) { /* ignore */ }
+      try { await sendPasswordResetEmail(auth, email); } catch {}
 
-      // now we are signed in as new user -> proceed to payment
       setProceedToPayment(true);
       setCheckingEmail(false);
+
     } catch (err) {
-      console.error("Error checking email:", err);
       setInfoMessage({ type: "error", text: "Error checking email registration. Try again." });
       setCheckingEmail(false);
     }
   };
 
-  // Payment success handler (RazorpayPayment must dispatch 'payment_success' event with detail.paymentId)
   useEffect(() => {
     const handler = async (e) => {
       const paymentId = e.detail?.paymentId;
@@ -192,24 +198,39 @@ export default function Checkout() {
 
       setLoadingSave(true);
       try {
-        const orderEmail = (form.email || "").trim().toLowerCase();
+        const orderEmail = form.email.trim().toLowerCase();
         const currentUser = auth.currentUser;
 
-        if (!currentUser || !currentUser.email || currentUser.email.toLowerCase() !== orderEmail) {
-          setInfoMessage({ type: "error", text: "Session expired or user mismatch. Please login and try again." });
+        if (!currentUser || currentUser.email.toLowerCase() !== orderEmail) {
+          setInfoMessage({ type: "error", text: "Session expired. Please login again." });
           setLoadingSave(false);
           return;
         }
 
-        // Save order to Firestore
         await saveOrderToFirestore(orderEmail, paymentId);
 
-        setInfoMessage({ type: "success", text: "Order saved successfully. Redirecting to Orders page..." });
-        localStorage.removeItem("ssf_cart");
-        setTimeout(() => window.location.href = "/orders", 900);
-      } catch (err) {
-        console.error("Error saving order after payment:", err);
-        setInfoMessage({ type: "error", text: "Could not save order. Check console." });
+        const email = auth.currentUser?.email;
+        if (email) {
+          localStorage.removeItem(`ssf_cart_${email}`);
+        } else {
+          localStorage.removeItem("ssf_cart");
+        }
+        setCart([]);
+
+        if (accountCreatedEmail) {
+          setInfoMessage({
+            type: "success",
+            text: `Account created for email: ${accountCreatedEmail}. Please check your inbox (and spam folder) to reset your password.`
+          });
+          setAccountCreatedEmail("");
+          setTimeout(() => window.location.href = "/orders", 7000);
+        } else {
+          setInfoMessage({ type: "success", text: "Order saved! Redirecting…" });
+          setTimeout(() => window.location.href = "/orders", 900);
+        }
+
+      } catch {
+        setInfoMessage({ type: "error", text: "Could not save order." });
       } finally {
         setLoadingSave(false);
       }
@@ -217,7 +238,7 @@ export default function Checkout() {
 
     window.addEventListener("payment_success", handler);
     return () => window.removeEventListener("payment_success", handler);
-  }, [form, cart]);
+  }, [form, cart, accountCreatedEmail]);
 
   const saveOrderToFirestore = async (orderEmail, paymentId) => {
     const itemsForDb = cart.map((item) => ({
@@ -229,45 +250,43 @@ export default function Checkout() {
       subCategory: item.subCategory || ""
     }));
 
-    const orderDoc = {
+    await addDoc(collection(db, "orders"), {
       customerEmail: orderEmail,
       customerPhone: form.phone,
       billingDetails: { ...form },
       items: itemsForDb,
       totalPrice: grandTotal,
-      paymentId: paymentId,
+      paymentId,
       status: "paid",
       createdAt: Timestamp.now(),
-    };
-
-    await addDoc(collection(db, "orders"), orderDoc);
+    });
   };
 
-  // open login popup from EmailExist popup
   const openLoginFromExistPopup = (email) => {
     setEmailExistPopupVisible(false);
-    setLoginPrefillEmail(email || "");
+    setLoginPrefillEmail(email);
     setTimeout(() => setLoginPopupVisible(true), 80);
   };
 
-  // after login success
   const handleLoginSuccess = () => {
     setLoginPopupVisible(false);
-    setInfoMessage({ type: "success", text: "Logged in. Click Pay Now again to continue." });
-    // user will click Pay Now again — now fetchSignInMethodsForEmail will detect registered & proceed
+    setCart(loadCorrectCart());
+    setInfoMessage({ type: "success", text: "Logged in. Click Pay Now again." });
   };
 
   return (
     <>
-      <div style={{ maxWidth: 1150, margin: "10px auto 0", padding: "0 20px" }}>
+      <div style={{ maxWidth: 1150, margin: "10px auto" }}>
         {infoMessage && (
-          <div className={`popup-msg ${infoMessage.type === "error" ? "error" : "success"}`} style={{ maxWidth: 1150 }}>
+          <div className={`popup-msg ${infoMessage.type}`} style={{ maxWidth: 1150 }}>
             {infoMessage.text}
           </div>
         )}
       </div>
 
       <div className="checkout-grid" style={{ maxWidth: 1150, margin: "18px auto 40px" }}>
+        
+        {/* LEFT */}
         <div className="checkout-left">
           <h2>Billing Details</h2>
 
@@ -319,13 +338,14 @@ export default function Checkout() {
                   <span>Create account for faster checkout & order tracking</span>
                 </label>
                 <p style={{ fontSize: 13, color: "#444", marginTop: 6 }}>
-                  If you don't create an account explicitly we may create one silently to save this order and send a password reset email.
+                  If you don't create an account explicitly we may create one silently to save this order.
                 </p>
               </div>
             )}
           </div>
         </div>
 
+        {/* RIGHT */}
         <div className="checkout-right">
           <h3>Your Order</h3>
 
@@ -347,34 +367,32 @@ export default function Checkout() {
               <label>I have read and agree to the website terms & conditions *</label>
             </div>
 
-            <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
-              <button
-                className="place-order-btn"
-                onClick={handlePayNowClicked}
-                disabled={checkingEmail || loadingSave}
-                style={{ flex: 1 }}
-              >
-                {checkingEmail ? "Checking..." : "Pay Now"}
-              </button>
+            <button
+              className="place-order-btn"
+              onClick={handlePayNowClicked}
+              disabled={checkingEmail || loadingSave}
+              style={{ marginTop: 12 }}
+            >
+              {checkingEmail ? "Checking..." : "Pay Now"}
+            </button>
+
+            <div style={{ marginTop: 10 }}>
+              {proceedToPayment && (
+                <RazorpayPayment
+                  cart={cart}
+                  form={form}
+                  totalAmount={grandTotal}
+                  userEmail={userEmail || form.email}
+                  customerPhone={form.phone}
+                  agreeTerms={agreeTerms}
+                  autoStart={true}
+                />
+              )}
             </div>
 
-            {/* When proceedToPayment true => mount RazorpayPayment with autoStart */}
-           <div style={{ marginTop: 10 }}>
-  {proceedToPayment && (
-    <RazorpayPayment
-      cart={cart}
-      form={form}
-      totalAmount={grandTotal}
-      userEmail={userEmail || form.email}
-      customerPhone={form.phone}
-      agreeTerms={agreeTerms}
-      autoStart={true}
-    />
-  )}
-</div>
-
-
-            {loadingSave && <p style={{ color: "#ff6b81", marginTop: 8 }}>Processing order, please wait...</p>}
+            {loadingSave && (
+              <p style={{ color: "#ff6b81", marginTop: 8 }}>Processing order, please wait...</p>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 /* ================================
-   NAVBAR MAIN CONTAINER
+   NAVBAR MAIN
 ================================ */
 .navbar {
   width: 100%;
@@ -11,17 +11,15 @@
   border-bottom: 1px solid #f0f0f0;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 2000; /* Increased so dropdown shows above all */
   box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
 }
 
-/* ================================
-   LEFT LOGO + BRAND
-================================ */
+/* LOGO */
 .navbar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .logo {
@@ -36,16 +34,13 @@
   color: #222;
 }
 
-/* ================================
-   RIGHT SIDE NAV ITEMS
-================================ */
+/* RIGHT SIDE (DESKTOP MENU) */
 .navbar-right {
   display: flex;
   align-items: center;
   gap: 26px;
 }
 
-/* LINKS */
 .nav-link {
   text-decoration: none;
   font-size: 16px;
@@ -61,13 +56,9 @@
   color: white;
 }
 
-/* ================================
-   ICONS
-================================ */
+/* ICONS */
 .icon {
-  font-size: 20px;
   cursor: pointer;
-  color: #444;
   transition: 0.25s;
 }
 
@@ -75,41 +66,38 @@
   color: #ff4d6d;
 }
 
-/* ================================
-   DROPDOWN MENU
-================================ */
+/* DROPDOWN */
 .dropdown {
   position: relative;
-  cursor: pointer;
+  z-index: 2100; /* Ensures hover + dropdown always visible */
 }
 
 .dropdown-title {
   display: flex;
   align-items: center;
   gap: 6px;
+  cursor: pointer;
 }
 
+/* FIXED: dropdown positioned correctly on top */
 .dropdown-menu {
   position: absolute;
   top: 38px;
   left: 0;
   background: white;
+  width: 220px;
   border-radius: 10px;
   padding: 12px 0;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.12);
-  width: 200px;
-  display: flex;
-  flex-direction: column;
-  z-index: 1000;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
   animation: fadeDown 0.18s ease-out;
+  z-index: 3000;
 }
 
 .dropdown-menu span {
-  padding: 10px 16px;
-  font-size: 15px;
-  color: #444;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: 0.25s;
+  transition: 0.2s;
+  font-size: 15px;
 }
 
 .dropdown-menu span:hover {
@@ -117,15 +105,12 @@
   color: #ff003c;
 }
 
-/* Smooth dropdown animation */
 @keyframes fadeDown {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ================================
-   CART + MONEY BOX
-================================ */
+/* CART */
 .money-cart {
   display: flex;
   align-items: center;
@@ -142,9 +127,8 @@
 }
 
 .money-text {
-  font-weight: 600;
   font-size: 16px;
-  color: #222;
+  font-weight: 600;
 }
 
 .cart-icon-wrapper {
@@ -153,13 +137,13 @@
 
 .cart-count {
   position: absolute;
-  top: -6px;
-  right: -10px;
   background: #ff003c;
   color: white;
   width: 17px;
   height: 17px;
   border-radius: 50%;
+  top: -6px;
+  right: -10px;
   font-size: 11px;
   display: flex;
   justify-content: center;
@@ -167,77 +151,82 @@
 }
 
 /* ================================
-   MOBILE VIEW (VERY IMPORTANT)
+   MOBILE MENU
 ================================ */
+.mobile-menu-btn {
+  display: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #333;
+  z-index: 2500; /* Ensures always clickable */
+}
+
+/* Sidebar */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 75%;
+  height: 100vh;
+  background: white;
+  z-index: 2600;
+  padding: 40px 20px;
+  transition: 0.3s ease-in-out;
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-menu.active {
+  right: 0;
+}
+
+.close-btn {
+  font-size: 26px;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.mobile-link {
+  display: block;
+  font-size: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eee;
+  color: #222;
+  font-weight: 600;
+}
+
+.mobile-link:hover {
+  color: #ff003c;
+}
+
+.mobile-cart {
+  margin-top: 25px;
+  padding: 12px;
+  background: #fff3f6;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* MOBILE BREAKPOINT */
 @media (max-width: 850px) {
-  .navbar {
-    padding: 12px 18px;
-  }
-
   .navbar-right {
-    display: none; /* hide desktop menu */
+    display: none;
   }
 
-  /* MOBILE HAMBURGER */
   .mobile-menu-btn {
     display: block;
-    font-size: 26px;
-    cursor: pointer;
-    color: #333;
-  }
-
-  /* MOBILE DROPDOWN FULL SCREEN MENU */
-  .mobile-menu {
-    display: block;
-    position: fixed;
-    top: 0;
-    right: -100%;
-    width: 75%;
-    height: 100vh;
-    background: white;
-    z-index: 2000;
-    padding: 40px 20px;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.12);
-    transition: 0.4s ease-in-out;
-  }
-
-  .mobile-menu.active {
-    right: 0;
-  }
-
-  .mobile-link {
-    display: block;
-    font-size: 18px;
-    padding: 14px 0;
-    font-weight: 600;
-    color: #333;
-    border-bottom: 1px solid #eee;
-  }
-
-  .mobile-link:hover {
-    color: #ff003c;
-  }
-
-  /* MOBILE CART */
-  .mobile-cart {
-    margin-top: 20px;
-    padding: 12px;
-    background: #fff3f6;
-    border-radius: 12px;
-    font-size: 18px;
-    display: flex;
-    justify-content: space-between;
   }
 }
 
-/* Extra small screens */
-@media (max-width: 480px) {
+@media (max-width: 500px) {
   .brand-name {
     font-size: 19px;
   }
 
   .logo {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
   }
 }
