@@ -1,9 +1,9 @@
-﻿// client/src/pages/Categories.js
+﻿// src/pages/Categories.js
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../Categories.css";
-import { db } from "../firebase";
-import { emitCartUpdate } from "./cartEvents";
+import { db, auth } from "../firebase"; // import auth here
+import { emitCartUpdate } from "./cartEvents"; // fixed path
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 
 // Function to safely get primary image
@@ -25,7 +25,9 @@ export default function CategoriesPage() {
   const [searchText, setSearchText] = useState("");
   const [priceFilter, setPriceFilter] = useState(5000);
   const [currentPage, setCurrentPage] = useState(1);
-  const [successMsg, setSuccessMsg] = useState("");
+
+  // NEW — popup message state
+  const [popupMsg, setPopupMsg] = useState("");
 
   const ITEMS_PER_PAGE = 20;
 
@@ -44,7 +46,7 @@ export default function CategoriesPage() {
     { id: "kidswear", label: "Kids Wear" },
   ];
 
-  // ⭐ NEW — Read category from URL
+  // Read category from URL on first load
   useEffect(() => {
     const urlCat = new URLSearchParams(location.search).get("cat");
     if (urlCat) {
@@ -109,9 +111,13 @@ export default function CategoriesPage() {
     if (num >= 1 && num <= totalPages) setCurrentPage(num);
   };
 
-  // Add product to cart with stock check
+  // Perfect Add to Cart (Works same for logged-in / guest)
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
+    // pick key depending on auth state
+    const email = auth.currentUser?.email;
+    const key = email ? `ssf_cart_${email}` : "ssf_cart";
+
+    let cart = JSON.parse(localStorage.getItem(key) || "[]");
     const stockQty = Number(product.stockQty) || 0;
 
     const existingIndex = cart.findIndex((c) => c.id === product.id);
@@ -120,17 +126,15 @@ export default function CategoriesPage() {
       const existingItem = cart[existingIndex];
 
       if ((existingItem.qty || 1) >= stockQty) {
-        alert(`Only ${stockQty} items available for ${product.name}`);
+        showPopup(`Only ${stockQty} available`);
         return;
       }
 
-      const updatedCart = [...cart];
-      updatedCart[existingIndex] = {
+      cart[existingIndex] = {
         ...existingItem,
         qty: (existingItem.qty || 1) + 1,
         stock: stockQty,
       };
-      cart = updatedCart;
     } else {
       cart.push({
         id: product.id,
@@ -142,19 +146,33 @@ export default function CategoriesPage() {
       });
     }
 
-    localStorage.setItem("ssf_cart", JSON.stringify(cart));
-    emitCartUpdate();
+    localStorage.setItem(key, JSON.stringify(cart));
+    emitCartUpdate(); // Immediately refresh UI across app
 
-    setSuccessMsg(`${product.name} added to cart!`);
-    setTimeout(() => setSuccessMsg(""), 2500);
+    showPopup(`${product.name} added to cart`);
   };
 
-  // Count products per category
+  // Beautiful Meesho-style popup
+  const showPopup = (msg) => {
+    setPopupMsg(msg);
+    setTimeout(() => {
+      setPopupMsg("");
+    }, 1800);
+  };
+
   const categoryCount = (catId) =>
     products.filter((p) => p.category === catId).length;
 
   return (
     <div className="categories-container">
+
+      {/* POPUP MESSAGE */}
+      {popupMsg && (
+        <div className="popup-toast">
+          {popupMsg}
+        </div>
+      )}
+
       {/* Sidebar */}
       <div className="category-sidebar">
         <h5 className="sidebar-title">Categories</h5>
@@ -166,6 +184,7 @@ export default function CategoriesPage() {
               onClick={() => {
                 setSelectedCategory(cat.id);
                 setCurrentPage(1);
+                navigate(`/categories?cat=${cat.id}`);
               }}
             >
               {cat.label} <span className="count">({categoryCount(cat.id)})</span>
@@ -176,7 +195,6 @@ export default function CategoriesPage() {
 
       {/* Product Section */}
       <div className="product-section">
-        {successMsg && <p className="success-message">{successMsg}</p>}
 
         {/* Search Box */}
         <input
@@ -196,7 +214,7 @@ export default function CategoriesPage() {
           <input
             type="range"
             min="100"
-            max="5000"
+            max="10000"
             step="50"
             value={priceFilter}
             onChange={(e) => {
@@ -220,9 +238,7 @@ export default function CategoriesPage() {
                   alt={p.name}
                   className="product-img"
                   onError={(e) => {
-                    setTimeout(() => {
-                      e.target.src = getPrimaryImage(p);
-                    }, 1500);
+                    e.target.src = "/placeholder.jpg";
                   }}
                   onClick={() => navigate(`/product/${p.id}`)}
                 />

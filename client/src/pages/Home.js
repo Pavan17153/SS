@@ -101,7 +101,7 @@ const Home = () => {
                 />
               ))
             ) : (
-              <div style={{ width: "100%", height: "100%", borderRadius: 12, background: "#f2f2f2" }} />
+              <div style={{ width: "100%", height: "100%", borderRadius: 12.5, background: "#f2f2f2" }} />
             )}
             <FiChevronRight className="arrow right" onClick={next} aria-label="Next slide" />
           </div>

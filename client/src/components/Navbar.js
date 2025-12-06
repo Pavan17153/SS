@@ -56,6 +56,7 @@ const Navbar = () => {
         const finalCart = mergeCarts(guestCart, userCart);
 
         localStorage.setItem(userKey, JSON.stringify(finalCart));
+        // keep guest cart empty after merging (so we don't double-add on later logins)
         localStorage.removeItem("ssf_cart");
 
         updateCart();
@@ -84,7 +85,7 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await auth.signOut();
-    localStorage.setItem("ssf_cart", "[]");
+    // Option 1: DO NOT clear guest cart on logout
     cartEvent.dispatchEvent(new Event("cartUpdated"));
     setMobileMenu(false);
     navigate("/login");
@@ -172,7 +173,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - same as before */}
       <div className={`mobile-menu ${mobileMenu ? "active" : ""}`}>
         <div className="mobile-menu-header">
           <div className="mobile-user">

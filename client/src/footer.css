@@ -1,0 +1,219 @@
+/* ---------------------- FOOTER MAIN ---------------------- */
+.footer {
+    background: linear-gradient(180deg, #1f1f1f, #181818);
+    color: #eee;
+    padding: 70px 0 40px;
+    margin-top: 80px;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* TOP WAVE (Meesho style) */
+.footer::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 100%;
+    height: 120px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ff4c7d' fill-opacity='1' d='M0,64L48,96C96,128,192,192,288,224C384,256,480,256,576,213.3C672,171,768,85,864,85.3C960,85,1056,171,1152,213.3C1248,256,1344,256,1392,256L1440,256L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+    background-size: cover;
+    background-repeat: no-repeat;
+    transform: translateY(-100%);
+}
+
+/* Container */
+.footer-container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* ROW */
+.footer-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 50px;
+    text-align: left;
+}
+
+/* COLUMN */
+.footer-col {
+    width: 45%;
+    min-width: 260px;
+    animation: fadeUp 0.8s ease-in-out;
+    transition: 0.4s ease-in-out;
+}
+
+/* Column hover elevate (Ajio style) */
+.footer-col:hover {
+    transform: translateY(-8px);
+}
+
+/* TITLE */
+.footer-title {
+    color: #ff4c7d;
+    font-size: 20px;
+    margin-bottom: 18px;
+    font-weight: 700;
+    position: relative;
+    letter-spacing: 0.5px;
+}
+
+/* Underline animation */
+.footer-title::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 45px;
+    height: 3px;
+    background: #ff4c7d;
+    border-radius: 12px;
+    transition: width 0.4s ease;
+}
+
+.footer-col:hover .footer-title::after {
+    width: 90px;
+}
+
+/* LIST */
+.footer-list {
+    list-style: none;
+    padding: 0;
+    line-height: 2.2;
+    margin: 0;
+}
+
+/* LINKS */
+.footer-link {
+    color: #cfcfcf;
+    text-decoration: none;
+    font-size: 15px;
+    display: inline-block;
+    position: relative;
+    padding: 4px 0;
+    transition: 0.3s ease-in-out;
+}
+
+/* Link Hover */
+.footer-link:hover {
+    color: #ff4c7d;
+    padding-left: 8px;
+    transform: translateX(4px);
+    text-shadow: 0 0 8px rgba(255, 76, 125, 0.6);
+}
+
+/* LINE */
+.footer-line {
+    border-color: #555;
+    margin: 30px 0;
+}
+
+/* BOTTOM */
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* COPYRIGHT */
+.footer-copy {
+    color: #ccc;
+    font-size: 14px;
+    font-weight: 300;
+}
+
+/* SOCIAL ICONS */
+.footer-social a {
+    color: #ff4c7d;
+    margin: 0 12px;
+    font-size: 24px;
+    transition: 0.3s ease;
+    display: inline-block;
+}
+
+/* Social hover - Meesho Glow */
+.footer-social a:hover {
+    transform: scale(1.4) rotate(8deg);
+    color: white;
+    text-shadow: 0 0 15px #ff4c7d, 0 0 25px #ff4c7d;
+}
+
+/* Scroll to top */
+.scroll-top {
+    position: absolute;
+    right: 25px;
+    bottom: 25px;
+    width: 48px;
+    height: 48px;
+    background: #ff4c7d;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: 0.3s ease-in-out;
+}
+
+.scroll-top:hover {
+    transform: translateY(-8px) scale(1.1);
+}
+
+/* Scroll Icon */
+.scroll-top i {
+    color: white;
+    font-size: 20px;
+}
+
+/* Fade Up Animation */
+@keyframes fadeUp {
+    0% {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---------------------- MOBILE (unchanged) ---------------------- */
+@media (max-width: 768px) {
+
+    .footer-col {
+        width: 100%;
+        text-align: center;
+    }
+
+    .footer-title {
+        text-align: center;
+    }
+
+    .footer-title::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .footer-bottom {
+        text-align: center;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .footer-social a {
+        font-size: 24px;
+    }
+
+    .scroll-top {
+        right: 10px;
+        bottom: 15px;
+        width: 40px;
+        height: 40px;
+    }
+}

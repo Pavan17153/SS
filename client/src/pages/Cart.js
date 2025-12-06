@@ -1,7 +1,7 @@
 ﻿// src/components/Cart.js
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { emitCartUpdate, cartEvent } from "./cartEvents";   // ✅ FIXED IMPORT
+import { emitCartUpdate, cartEvent } from "./cartEvents"; // fixed path
 import { FaTrash } from "react-icons/fa";
 import { auth } from "../firebase";
 import "../Cart.css";
@@ -12,7 +12,7 @@ export default function Cart() {
   const [undoItem, setUndoItem] = useState(null);
   const [undoVisible, setUndoVisible] = useState(false);
 
-  // Load correct cart
+  // Load correct cart for current user or guest
   const loadCart = () => {
     const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
@@ -23,10 +23,12 @@ export default function Cart() {
   useEffect(() => {
     loadCart();
 
-    // Listen for login/logout
-    const unsub = auth.onAuthStateChanged(() => loadCart());
+    // Listen for login/logout and external cart updates
+    const unsub = auth.onAuthStateChanged(() => {
+      loadCart();
+      // force navbar update elsewhere via emitCartUpdate is done on login merge
+    });
 
-    // Listen for unified cart update event
     const handler = () => loadCart();
     cartEvent.addEventListener("cartUpdated", handler);
 
@@ -56,7 +58,7 @@ export default function Cart() {
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     localStorage.setItem(key, JSON.stringify(updated));
     setCart(updated);
-    emitCartUpdate();  // 🔥 Notify navbar
+    emitCartUpdate(); // notify
   };
 
   // REMOVE ITEM

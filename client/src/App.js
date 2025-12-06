@@ -18,11 +18,11 @@ import Orders from "./pages/Orders";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 
-// Info Pages
-import FAQ from "./pages/Faq";
+// Info & Policy Pages (import names must match default exports in JS-format pages)
+import Faq from "./pages/Faq";
 import Terms from "./pages/Terms";
-import PrivacyPolicy from "./pages/Privacy";
-import ShippingPolicy from "./pages/Shipping";
+import Privacy from "./pages/Privacy";
+import Shipping from "./pages/Shipping";
 
 export default function App() {
   return (
@@ -54,15 +54,15 @@ export default function App() {
           {/* Orders */}
           <Route path="/orders" element={<Orders />} />
 
-          {/* Info */}
+          {/* Info Pages */}
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
 
-          {/* Policies */}
-          <Route path="/faq" element={<FAQ />} />
+          {/* Policy Pages */}
+          <Route path="/faq" element={<Faq />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/shipping" element={<ShippingPolicy />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/shipping" element={<Shipping />} />
         </Routes>
       </div>
 

@@ -25,7 +25,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [mainIndex, setMainIndex] = useState(0);
   const [related, setRelated] = useState([]);
-  const [successMsg, setSuccessMsg] = useState("");
+  const [toastMsg, setToastMsg] = useState(""); // new toast message state
   const [stockWarning, setStockWarning] = useState("");
 
   const [zoom, setZoom] = useState(false);
@@ -33,11 +33,9 @@ export default function ProductDetail() {
 
   const fetchRelatedProducts = async (category, currentId) => {
     if (!category) return;
-
     const q = query(collection(db, "products"), where("category", "==", category));
     const snap = await getDocs(q);
     const all = [];
-
     snap.forEach((d) => {
       if (d.id !== currentId) {
         all.push({
@@ -47,7 +45,6 @@ export default function ProductDetail() {
         });
       }
     });
-
     setRelated(all.sort(() => 0.5 - Math.random()).slice(0, 4));
   };
 
@@ -62,8 +59,8 @@ export default function ProductDetail() {
       const imagesNormalized = Array.isArray(data.images)
         ? data.images.map(normalizeImg).filter(Boolean)
         : data.images
-        ? [normalizeImg(data.images)].filter(Boolean)
-        : [];
+          ? [normalizeImg(data.images)].filter(Boolean)
+          : [];
 
       const primary = normalizeImg(data.image);
       const finalImages =
@@ -100,7 +97,7 @@ export default function ProductDetail() {
 
     if (currentQty >= stock) {
       setStockWarning(`Only ${stock} items available in stock for ${product.title}.`);
-      setTimeout(() => setStockWarning(""), 2500);
+      setTimeout(() => setStockWarning(""), 3000);
       return;
     }
 
@@ -113,8 +110,8 @@ export default function ProductDetail() {
     localStorage.setItem("ssf_cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("storage"));
 
-    setSuccessMsg("Product added to cart!");
-    setTimeout(() => setSuccessMsg(""), 2500);
+    setToastMsg("Product added to cart!"); // show toast
+    setTimeout(() => setToastMsg(""), 3000);
   };
 
   const handleMouseMove = (e) => {
@@ -128,6 +125,8 @@ export default function ProductDetail() {
 
   return (
     <div className="detail-container">
+      {toastMsg && <div className="toast-message">{toastMsg}</div>} {/* TOAST MESSAGE */}
+
       <button onClick={() => nav(-1)} className="back-btn bounce">
         <FaArrowLeft /> Back
       </button>
@@ -187,12 +186,9 @@ export default function ProductDetail() {
         )}
 
         {product.stockQty > 0 ? (
-          <>
-            <button className="add-basket-btn pulse" onClick={addToCart}>
-              Add to Cart
-            </button>
-            {successMsg && <p className="success-message">{successMsg}</p>}
-          </>
+          <button className="add-basket-btn pulse" onClick={addToCart}>
+            Add to Cart
+          </button>
         ) : (
           <button className="add-basket-btn disabled">Out of Stock</button>
         )}
