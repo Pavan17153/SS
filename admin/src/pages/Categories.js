@@ -208,6 +208,7 @@ export default function ProductAdmin() {
       >
         <option value="maggam-work">Maggam Work</option>
         <option value="bridal">Bridal</option>
+        <option value="saree">Sarees</option>
         <option value="simple">Simple Blouse</option>
         <option value="computer-work">Computer Work</option>
         <option value="heavy">Heavy Blouse</option>

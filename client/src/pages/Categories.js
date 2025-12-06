@@ -33,6 +33,7 @@ export default function CategoriesPage() {
     { id: "maggam-work", label: "Maggam Work" },
     { id: "bridal", label: "Bridal Work" },
     { id: "simple", label: "Simple Blouse" },
+    { id: "saree", label: "Sarees" },
     { id: "computer-work", label: "Computer Work" },
     { id: "heavy", label: "Heavy Blouse" },
     { id: "mirror", label: "Mirror Work" },
@@ -74,8 +75,8 @@ export default function CategoriesPage() {
             images: Array.isArray(data.images)
               ? data.images.filter((img) => img && img.trim())
               : data.images
-              ? [data.images].filter((img) => img && img.trim())
-              : [],
+                ? [data.images].filter((img) => img && img.trim())
+                : [],
             image: data.image || "",
             createdAt: data.createdAt || null,
           };

@@ -1,7 +1,15 @@
-﻿// Navbar.js
+﻿// src/components/Navbar.js
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaShoppingCart, FaUser, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
+import {
+  FaShoppingCart,
+  FaUser,
+  FaSignOutAlt,
+  FaBars,
+  FaTimes,
+  FaUserCircle,
+  FaChevronRight,
+} from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { auth } from "../firebase";
 import { cartEvent } from "../pages/cartEvents";
@@ -12,8 +20,8 @@ const Navbar = () => {
   const [cartCount, setCartCount] = useState(0);
   const [cartTotal, setCartTotal] = useState(0);
   const [userEmail, setUserEmail] = useState(null);
-
-  const [mobileMenu, setMobileMenu] = useState(false); 
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
 
   const navigate = useNavigate();
 
@@ -31,6 +39,7 @@ const Navbar = () => {
     const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     const cart = JSON.parse(localStorage.getItem(key) || "[]");
+
     setCartCount(cart.reduce((s, i) => s + (i.qty || 1), 0));
     setCartTotal(cart.reduce((s, i) => s + i.price * (i.qty || 1), 0));
   };
@@ -45,6 +54,7 @@ const Navbar = () => {
         const userCart = JSON.parse(localStorage.getItem(userKey) || "[]");
 
         const finalCart = mergeCarts(guestCart, userCart);
+
         localStorage.setItem(userKey, JSON.stringify(finalCart));
         localStorage.removeItem("ssf_cart");
 
@@ -68,6 +78,7 @@ const Navbar = () => {
 
   const goToCategory = (catId) => {
     setMobileMenu(false);
+    setDropdown(false);
     navigate(`/categories?cat=${catId}`);
   };
 
@@ -75,43 +86,51 @@ const Navbar = () => {
     await auth.signOut();
     localStorage.setItem("ssf_cart", "[]");
     cartEvent.dispatchEvent(new Event("cartUpdated"));
+    setMobileMenu(false);
     navigate("/login");
+  };
+
+  const openOrders = () => {
+    setMobileMenu(false);
+    navigate("/orders");
+  };
+
+  const openCart = () => {
+    setMobileMenu(false);
+    navigate("/cart");
   };
 
   return (
     <>
-      <nav className="navbar">
-
-        <div className="navbar-left">
+      <nav className="navbar" role="navigation" aria-label="Main navigation">
+        <div className="navbar-left" onClick={() => navigate("/")}>
           <img src="/logo.png" alt="logo" className="logo" />
           <span className="brand-name">SS Fashion</span>
         </div>
 
-        {/* ⭐ DESKTOP MENU FIXED */}
+        {/* Desktop Menu */}
         <div className="navbar-right">
-
           <Link to="/" className="nav-link">Home</Link>
 
-          {/* ⭐ FIX: Added onClick toggle for desktop */}
-          <div
-            className="dropdown"
-            onMouseEnter={() => setDropdown(true)}
-            onMouseLeave={() => setDropdown(false)}
-            onClick={() => setDropdown((p) => !p)}
-          >
-            <span className="nav-link dropdown-title">
+          {/* Shop Now Dropdown */}
+          <div className="dropdown">
+            <button
+              className="nav-link dropdown-title"
+              onClick={() => setDropdown((prev) => !prev)}
+            >
               Shop Now <FiChevronDown size={16} />
-            </span>
+            </button>
 
             {dropdown && (
-              <div className="dropdown-menu">
+              <div className="dropdown-menu show">
+                <span onClick={() => goToCategory("new-collection")}>New Collection</span>
                 <span onClick={() => goToCategory("maggam-work")}>Maggam Work</span>
                 <span onClick={() => goToCategory("computer-work")}>Computer Work</span>
                 <span onClick={() => goToCategory("saree")}>Sarees</span>
-                <span onClick={() => goToCategory("cloths")}>Cloths</span>
-                <span onClick={() => goToCategory("dress")}>Dress</span>
-                <span onClick={() => goToCategory("stitch-blouse")}>Stitch Blouse</span>
-                <span onClick={() => goToCategory("tops")}>Tops & Pants</span>
+                <span onClick={() => goToCategory("bridal")}>Bridal Work</span>
+                <span onClick={() => goToCategory("simple")}>Simple Blouse</span>
+                <span onClick={() => goToCategory("heavy")}>Heavy Blouse</span>
+                <span onClick={() => goToCategory("top")}>Tops & Pants</span>
                 <span onClick={() => goToCategory("kidswear")}>Kids Wear</span>
               </div>
             )}
@@ -120,7 +139,7 @@ const Navbar = () => {
           <Link to="/about" className="nav-link">About</Link>
           <Link to="/contact" className="nav-link">Contact</Link>
 
-          <div className="money-cart" onClick={() => navigate("/cart")}>
+          <div className="money-cart" onClick={openCart}>
             <span className="money-text">₹ {cartTotal.toLocaleString("en-IN")}</span>
             <div className="cart-icon-wrapper">
               <FaShoppingCart className="icon cart-icon" />
@@ -130,42 +149,142 @@ const Navbar = () => {
 
           {userEmail ? (
             <>
-              <button className="nav-link btn-order" onClick={() => navigate("/orders")}>
+              <button className="nav-link btn-order" onClick={openOrders}>
                 My Orders
               </button>
-              <FaSignOutAlt className="icon user-icon" onClick={handleLogout} />
+              <FaSignOutAlt
+                className="icon user-icon"
+                onClick={handleLogout}
+                title="Logout"
+              />
             </>
           ) : (
-            <FaUser className="icon user-icon" onClick={() => navigate("/login")} />
+            <FaUser
+              className="icon user-icon"
+              onClick={() => navigate("/login")}
+              title="Login"
+            />
           )}
         </div>
 
-        {/* MOBILE MENU BUTTON */}
         <div className="mobile-menu-btn" onClick={() => setMobileMenu(true)}>
           <FaBars />
         </div>
       </nav>
 
-      {/* MOBILE MENU SIDEBAR */}
+      {/* Mobile Menu */}
       <div className={`mobile-menu ${mobileMenu ? "active" : ""}`}>
-        <FaTimes className="close-btn" onClick={() => setMobileMenu(false)} />
+        <div className="mobile-menu-header">
+          <div className="mobile-user">
+            <FaUserCircle size={40} />
 
-        <Link to="/" onClick={() => setMobileMenu(false)} className="mobile-link">Home</Link>
-        <span className="mobile-link" onClick={() => goToCategory("maggam-work")}>Maggam Work</span>
-        <span className="mobile-link" onClick={() => goToCategory("computer-work")}>Computer Work</span>
-        <span className="mobile-link" onClick={() => goToCategory("saree")}>Sarees</span>
-        <span className="mobile-link" onClick={() => goToCategory("cloths")}>Cloths</span>
-        <span className="mobile-link" onClick={() => goToCategory("dress")}>Dress</span>
-        <span className="mobile-link" onClick={() => goToCategory("stitch-blouse")}>Stitch Blouse</span>
-        <span className="mobile-link" onClick={() => goToCategory("tops")}>Tops & Pants</span>
-        <span className="mobile-link" onClick={() => goToCategory("kidswear")}>Kids Wear</span>
+            <div className="mobile-user-info">
+              {userEmail ? (
+                <>
+                  <div className="mobile-user-email">{userEmail}</div>
+                  <button className="mobile-cta" onClick={openOrders}>My Orders</button>
+                </>
+              ) : (
+                <>
+                  <div className="mobile-user-guest">Welcome</div>
+                  <button
+                    className="mobile-cta"
+                    onClick={() => {
+                      setMobileMenu(false);
+                      navigate("/login");
+                    }}
+                  >
+                    Login / Signup
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
 
-        <Link to="/about" onClick={() => setMobileMenu(false)} className="mobile-link">About</Link>
-        <Link to="/contact" onClick={() => setMobileMenu(false)} className="mobile-link">Contact</Link>
+          <FaTimes className="close-btn" onClick={() => setMobileMenu(false)} />
+        </div>
 
-        <div className="mobile-cart" onClick={() => navigate("/cart")}>
-          <span>Cart</span>
-          <span>₹ {cartTotal.toLocaleString("en-IN")}</span>
+        <div className="mobile-list">
+          <div
+            className="mobile-item"
+            onClick={() => {
+              setMobileMenu(false);
+              navigate("/");
+            }}
+          >
+            <span>Home</span>
+            <FaChevronRight />
+          </div>
+
+          <div
+            className="mobile-section-title"
+            onClick={() => setShowCategories(prev => !prev)}
+          >
+            Categories
+          </div>
+
+          <div className={`mobile-categories-container ${showCategories ? "show" : ""}`}>
+            {["maggam-work", "computer-work", "saree", "new-collection", "bridal", "simple", "tops", "kidswear"].map((cat) => (
+              <div key={cat} className="mobile-item" onClick={() => goToCategory(cat)}>
+                <span>{cat.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}</span>
+                <FaChevronRight />
+              </div>
+            ))}
+          </div>
+
+          <div className="mobile-divider" />
+
+          <div
+            className="mobile-item"
+            onClick={() => {
+              setMobileMenu(false);
+              navigate("/about");
+            }}
+          >
+            <span>About</span>
+            <FaChevronRight />
+          </div>
+
+          <div
+            className="mobile-item"
+            onClick={() => {
+              setMobileMenu(false);
+              navigate("/contact");
+            }}
+          >
+            <span>Contact</span>
+            <FaChevronRight />
+          </div>
+
+          <div className="mobile-cart" onClick={openCart}>
+            <div>
+              <strong>Cart</strong>
+              <div className="mobile-cart-sub">
+                ₹ {cartTotal.toLocaleString("en-IN")} • {cartCount} items
+              </div>
+            </div>
+            <FaShoppingCart size={20} />
+          </div>
+
+          {userEmail ? (
+            <div className="mobile-action-row">
+              <button className="mobile-logout" onClick={handleLogout}>
+                <FaSignOutAlt /> Logout
+              </button>
+            </div>
+          ) : (
+            <div className="mobile-action-row">
+              <button
+                className="mobile-login"
+                onClick={() => {
+                  setMobileMenu(false);
+                  navigate("/login");
+                }}
+              >
+                <FaUser /> Login / Signup
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
