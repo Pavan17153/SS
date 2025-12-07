@@ -23,6 +23,7 @@ const CATEGORIES = [
   "maggam-work",
   "bridal",
   "simple",
+  "saree",
   "computer-work",
   "heavy",
   "mirror",

@@ -1,7 +1,7 @@
 ﻿// src/components/Cart.js
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { emitCartUpdate, cartEvent } from "./cartEvents"; // fixed path
+import { emitCartUpdate, cartEvent } from "./cartEvents";
 import { FaTrash } from "react-icons/fa";
 import { auth } from "../firebase";
 import "../Cart.css";
@@ -12,21 +12,35 @@ export default function Cart() {
   const [undoItem, setUndoItem] = useState(null);
   const [undoVisible, setUndoVisible] = useState(false);
 
+  const [popupMsg, setPopupMsg] = useState(""); // 🔥 new popup message
+
+  // Function to show popup
+  const showPopup = (msg) => {
+    setPopupMsg(msg);
+    setTimeout(() => setPopupMsg(""), 2000);
+  };
+
   // Load correct cart for current user or guest
   const loadCart = () => {
     const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     const stored = JSON.parse(localStorage.getItem(key) || "[]");
-    setCart(stored);
+
+    // Ensure qty + stock always exist
+    const fixed = stored.map((item) => ({
+      ...item,
+      qty: item.qty ? item.qty : 1,
+      stock: item.stock ? item.stock : 5, // Default fallback (keep same)
+    }));
+
+    setCart(fixed);
   };
 
   useEffect(() => {
     loadCart();
 
-    // Listen for login/logout and external cart updates
     const unsub = auth.onAuthStateChanged(() => {
       loadCart();
-      // force navbar update elsewhere via emitCartUpdate is done on login merge
     });
 
     const handler = () => loadCart();
@@ -58,7 +72,7 @@ export default function Cart() {
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     localStorage.setItem(key, JSON.stringify(updated));
     setCart(updated);
-    emitCartUpdate(); // notify
+    emitCartUpdate();
   };
 
   // REMOVE ITEM
@@ -94,10 +108,17 @@ export default function Cart() {
     }
   };
 
-  // INCREASE QTY
+  // INCREASE QTY with STOCK LIMIT
   const increaseQty = (index) => {
     const updated = [...cart];
-    updated[index].qty += 1;
+    const item = updated[index];
+
+    if (item.qty >= item.stock) {
+      showPopup(`Only ${item.stock} items available in stock`);
+      return; // ❌ stop increasing
+    }
+
+    item.qty += 1;
     saveCart(updated);
   };
 
@@ -110,7 +131,24 @@ export default function Cart() {
   return (
     <div className="cart-container">
 
-      {/* BACK BUTTON */}
+      {/* 🔥 STOCK WARNING POPUP */}
+      {popupMsg && (
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          background: "#ff4d4d",
+          color: "white",
+          padding: "10px 18px",
+          borderRadius: "8px",
+          fontWeight: "600",
+          zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+        }}>
+          {popupMsg}
+        </div>
+      )}
+
       <button
         onClick={() => nav("/categories")}
         style={{
@@ -156,13 +194,40 @@ export default function Cart() {
               <div className="cart-row" key={idx}>
                 <FaTrash className="delete-icon" onClick={() => removeItem(idx)} />
                 <img src={c.image} alt="" className="cart-img" />
-                <span className="row-product">{c.name}</span>
+
+                <div>
+                  <span className="row-product">{c.name}</span>
+
+                  {/* 🔥 STOCK AVAILABILITY BADGE */}
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      marginTop: "3px",
+                      color: c.stock > 0 ? "#0a8a24" : "#d00000",
+                      fontWeight: "600"
+                    }}
+                  >
+                    {c.stock > 0
+                      ? `Stock Available: ${c.stock}`
+                      : "Out of Stock"}
+                  </div>
+                </div>
+
                 <span className="row-price">₹{c.price}</span>
 
                 <div className="qty-box">
                   <button onClick={() => decreaseQty(idx)}>-</button>
                   <span>{c.qty}</span>
-                  <button onClick={() => increaseQty(idx)}>+</button>
+                  <button
+                    onClick={() => increaseQty(idx)}
+                    disabled={c.qty >= c.stock} // 🔥 PREVENT BUTTON CLICK
+                    style={{
+                      opacity: c.qty >= c.stock ? 0.5 : 1,
+                      cursor: c.qty >= c.stock ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    +
+                  </button>
                 </div>
 
                 <span className="row-subtotal">₹{c.price * c.qty}</span>

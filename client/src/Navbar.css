@@ -418,8 +418,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-right: 10px;
-    padding: 6px 10px;
+    margin-right: -10px;
+    padding: 6px 15px;
     background: #fff0f4;
     border-radius: 20px;
     box-shadow: 0 2px 6px rgba(255, 46, 99, 0.2);

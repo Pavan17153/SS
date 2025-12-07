@@ -44,6 +44,7 @@ const Navbar = () => {
     setCartTotal(cart.reduce((s, i) => s + i.price * (i.qty || 1), 0));
   };
 
+  // 🔥 Auth listener
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -67,14 +68,8 @@ const Navbar = () => {
 
     return () => unsub();
   }, []);
-  useEffect(() => {
-    updateCart();
-    cartEvent.addEventListener("cartUpdated", updateCart);
 
-    return () => cartEvent.removeEventListener("cartUpdated", updateCart);
-  }, []);
-
-
+  // 🔥 Update cart on event
   useEffect(() => {
     updateCart();
     cartEvent.addEventListener("cartUpdated", updateCart);
@@ -86,36 +81,41 @@ const Navbar = () => {
     document.body.classList.toggle("menu-open", mobileMenu);
   }, [mobileMenu]);
 
-
-  const goToCategory = (catId) => {
+  // ⭐ Close menu helper
+  const closeMenu = () => {
     setMobileMenu(false);
     setDropdown(false);
+    setShowCategories(false);
+  };
+
+  const goToCategory = (catId) => {
+    closeMenu();
     navigate(`/categories?cat=${catId}`);
   };
 
   const handleLogout = async () => {
     await auth.signOut();
     cartEvent.dispatchEvent(new Event("cartUpdated"));
-    setMobileMenu(false);
+    closeMenu();
     navigate("/login");
   };
 
   const openOrders = () => {
-    setMobileMenu(false);
+    closeMenu();
     navigate("/orders");
   };
 
   const openCart = () => {
-    setMobileMenu(false);
+    closeMenu();
     navigate("/cart");
   };
 
   return (
     <>
-      {/* 🔥 OVERLAY FOR TOUCH OUTSIDE CLOSE */}
+      {/* 🔥 OVERLAY → CLOSE MENU ON OUTSIDE TOUCH */}
       <div
         className={`mobile-menu-overlay ${mobileMenu ? "active" : ""}`}
-        onClick={() => setMobileMenu(false)}   // 👈 Touch outside closes menu
+        onClick={closeMenu}
       ></div>
 
       <nav className="navbar">
@@ -210,35 +210,49 @@ const Navbar = () => {
             </div>
           </div>
 
-          <FaTimes className="close-btn" onClick={() => setMobileMenu(false)} />
+          <FaTimes className="close-btn" onClick={closeMenu} />
         </div>
 
         <div className="mobile-list">
-          <div className="mobile-item" onClick={() => { setMobileMenu(false); navigate("/"); }}>
+
+          <div className="mobile-item" onClick={() => { closeMenu(); navigate("/"); }}>
             <span>Home</span>
             <FaChevronRight />
           </div>
 
           <div className="mobile-section-title" onClick={() => setShowCategories(!showCategories)}>
             Categories
-
           </div>
 
           <div className={`mobile-categories-container ${showCategories ? "show" : ""}`}>
-            {["maggam-work", "computer-work", "saree", "new-collection", "bridal", "simple", "tops", "kidswear"].map((cat) => (
-              <div key={cat} className="mobile-item" onClick={() => goToCategory(cat)}>
+            {[
+              "maggam-work",
+              "computer-work",
+              "saree",
+              "new-collection",
+              "bridal",
+              "simple",
+              "heavy",
+              "top",
+              "kidswear"
+            ].map((cat) => (
+              <div
+                key={cat}
+                className="mobile-item"
+                onClick={() => goToCategory(cat)}
+              >
                 <span>{cat.replace("-", " ").toUpperCase()}</span>
                 <FaChevronRight />
               </div>
             ))}
           </div>
 
-          <div className="mobile-item" onClick={() => navigate("/about")}>
+          <div className="mobile-item" onClick={() => { closeMenu(); navigate("/about"); }}>
             <span>About</span>
             <FaChevronRight />
           </div>
 
-          <div className="mobile-item" onClick={() => navigate("/contact")}>
+          <div className="mobile-item" onClick={() => { closeMenu(); navigate("/contact"); }}>
             <span>Contact</span>
             <FaChevronRight />
           </div>
@@ -261,7 +275,7 @@ const Navbar = () => {
             </div>
           ) : (
             <div className="mobile-action-row">
-              <button className="mobile-login" onClick={() => navigate("/login")}>
+              <button className="mobile-login" onClick={() => { closeMenu(); navigate("/login"); }}>
                 <FaUser /> Login / Signup
               </button>
             </div>
