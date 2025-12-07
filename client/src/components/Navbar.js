@@ -54,28 +54,38 @@ const Navbar = () => {
         const userCart = JSON.parse(localStorage.getItem(userKey) || "[]");
 
         const finalCart = mergeCarts(guestCart, userCart);
-
         localStorage.setItem(userKey, JSON.stringify(finalCart));
-        // keep guest cart empty after merging (so we don't double-add on later logins)
         localStorage.removeItem("ssf_cart");
 
-        updateCart();
+        setTimeout(updateCart, 50);
         cartEvent.dispatchEvent(new Event("cartUpdated"));
       } else {
         setUserEmail(null);
-        setCartCount(0);
-        setCartTotal(0);
+        updateCart();
       }
     });
 
     return () => unsub();
   }, []);
+  useEffect(() => {
+    updateCart();
+    cartEvent.addEventListener("cartUpdated", updateCart);
+
+    return () => cartEvent.removeEventListener("cartUpdated", updateCart);
+  }, []);
+
 
   useEffect(() => {
     updateCart();
     cartEvent.addEventListener("cartUpdated", updateCart);
     return () => cartEvent.removeEventListener("cartUpdated", updateCart);
   }, []);
+
+  // 🔥 Disable body scroll when menu open
+  useEffect(() => {
+    document.body.classList.toggle("menu-open", mobileMenu);
+  }, [mobileMenu]);
+
 
   const goToCategory = (catId) => {
     setMobileMenu(false);
@@ -85,7 +95,6 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await auth.signOut();
-    // Option 1: DO NOT clear guest cart on logout
     cartEvent.dispatchEvent(new Event("cartUpdated"));
     setMobileMenu(false);
     navigate("/login");
@@ -103,17 +112,31 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="navbar" role="navigation" aria-label="Main navigation">
+      {/* 🔥 OVERLAY FOR TOUCH OUTSIDE CLOSE */}
+      <div
+        className={`mobile-menu-overlay ${mobileMenu ? "active" : ""}`}
+        onClick={() => setMobileMenu(false)}   // 👈 Touch outside closes menu
+      ></div>
+
+      <nav className="navbar">
         <div className="navbar-left" onClick={() => navigate("/")}>
           <img src="/logo.png" alt="logo" className="logo" />
           <span className="brand-name">SS Fashion</span>
         </div>
 
-        {/* Desktop Menu */}
+        {/* MOBILE MINI CART */}
+        <div className="mobile-cart-mini" onClick={openCart}>
+          <span className="mini-cart-price">₹ {cartTotal.toLocaleString("en-IN")}</span>
+          <div className="mini-cart-icon">
+            <FaShoppingCart />
+            {cartCount > 0 && <span className="mini-cart-count">{cartCount}</span>}
+          </div>
+        </div>
+
+        {/* DESKTOP MENU */}
         <div className="navbar-right">
           <Link to="/" className="nav-link">Home</Link>
 
-          {/* Shop Now Dropdown */}
           <div className="dropdown">
             <button
               className="nav-link dropdown-title"
@@ -143,7 +166,7 @@ const Navbar = () => {
           <div className="money-cart" onClick={openCart}>
             <span className="money-text">₹ {cartTotal.toLocaleString("en-IN")}</span>
             <div className="cart-icon-wrapper">
-              <FaShoppingCart className="icon cart-icon" />
+              <FaShoppingCart className="cart-icon" />
               {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
             </div>
           </div>
@@ -153,18 +176,10 @@ const Navbar = () => {
               <button className="nav-link btn-order" onClick={openOrders}>
                 My Orders
               </button>
-              <FaSignOutAlt
-                className="icon user-icon"
-                onClick={handleLogout}
-                title="Logout"
-              />
+              <FaSignOutAlt className="icon user-icon" onClick={handleLogout} />
             </>
           ) : (
-            <FaUser
-              className="icon user-icon"
-              onClick={() => navigate("/login")}
-              title="Login"
-            />
+            <FaUser className="icon user-icon" onClick={() => navigate("/login")} />
           )}
         </div>
 
@@ -173,12 +188,11 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu - same as before */}
+      {/* SLIDE MOBILE MENU */}
       <div className={`mobile-menu ${mobileMenu ? "active" : ""}`}>
         <div className="mobile-menu-header">
           <div className="mobile-user">
             <FaUserCircle size={40} />
-
             <div className="mobile-user-info">
               {userEmail ? (
                 <>
@@ -188,13 +202,7 @@ const Navbar = () => {
               ) : (
                 <>
                   <div className="mobile-user-guest">Welcome</div>
-                  <button
-                    className="mobile-cta"
-                    onClick={() => {
-                      setMobileMenu(false);
-                      navigate("/login");
-                    }}
-                  >
+                  <button className="mobile-cta" onClick={() => navigate("/login")}>
                     Login / Signup
                   </button>
                 </>
@@ -206,53 +214,31 @@ const Navbar = () => {
         </div>
 
         <div className="mobile-list">
-          <div
-            className="mobile-item"
-            onClick={() => {
-              setMobileMenu(false);
-              navigate("/");
-            }}
-          >
+          <div className="mobile-item" onClick={() => { setMobileMenu(false); navigate("/"); }}>
             <span>Home</span>
             <FaChevronRight />
           </div>
 
-          <div
-            className="mobile-section-title"
-            onClick={() => setShowCategories(prev => !prev)}
-          >
+          <div className="mobile-section-title" onClick={() => setShowCategories(!showCategories)}>
             Categories
+
           </div>
 
           <div className={`mobile-categories-container ${showCategories ? "show" : ""}`}>
             {["maggam-work", "computer-work", "saree", "new-collection", "bridal", "simple", "tops", "kidswear"].map((cat) => (
               <div key={cat} className="mobile-item" onClick={() => goToCategory(cat)}>
-                <span>{cat.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}</span>
+                <span>{cat.replace("-", " ").toUpperCase()}</span>
                 <FaChevronRight />
               </div>
             ))}
           </div>
 
-          <div className="mobile-divider" />
-
-          <div
-            className="mobile-item"
-            onClick={() => {
-              setMobileMenu(false);
-              navigate("/about");
-            }}
-          >
+          <div className="mobile-item" onClick={() => navigate("/about")}>
             <span>About</span>
             <FaChevronRight />
           </div>
 
-          <div
-            className="mobile-item"
-            onClick={() => {
-              setMobileMenu(false);
-              navigate("/contact");
-            }}
-          >
+          <div className="mobile-item" onClick={() => navigate("/contact")}>
             <span>Contact</span>
             <FaChevronRight />
           </div>
@@ -275,13 +261,7 @@ const Navbar = () => {
             </div>
           ) : (
             <div className="mobile-action-row">
-              <button
-                className="mobile-login"
-                onClick={() => {
-                  setMobileMenu(false);
-                  navigate("/login");
-                }}
-              >
+              <button className="mobile-login" onClick={() => navigate("/login")}>
                 <FaUser /> Login / Signup
               </button>
             </div>

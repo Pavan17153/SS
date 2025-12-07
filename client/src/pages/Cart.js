@@ -54,7 +54,7 @@ export default function Cart() {
 
   // SAVE CART + NOTIFY NAVBAR
   const saveCart = (updated) => {
-    const email = auth.currentUser?.email;
+    const email = auth.currentUser && auth.currentUser.email ? auth.currentUser.email : null;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     localStorage.setItem(key, JSON.stringify(updated));
     setCart(updated);

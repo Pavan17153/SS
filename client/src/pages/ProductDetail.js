@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { FaArrowLeft, FaSearchPlus } from "react-icons/fa";
 import "../ProductDetail.css";
+import { emitCartUpdate } from "./cartEvents"; // corrected path
 
 const normalizeImg = (val) => {
   if (!val || typeof val !== "string") return null;
@@ -25,7 +26,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [mainIndex, setMainIndex] = useState(0);
   const [related, setRelated] = useState([]);
-  const [toastMsg, setToastMsg] = useState(""); // new toast message state
+  const [toastMsg, setToastMsg] = useState("");
   const [stockWarning, setStockWarning] = useState("");
 
   const [zoom, setZoom] = useState(false);
@@ -88,12 +89,33 @@ export default function ProductDetail() {
 
   const images = product.images.length ? product.images : [getPrimaryImage(product)];
 
+  /** ADD TO CART FIXED: respects logged-in key, merges guest cart if needed, emits cartEvent */
   const addToCart = () => {
-    let cart = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
-    const exist = cart.find((c) => c.id === product.id);
+    // determine storage key depending on auth state
+    const email = auth.currentUser?.email || null;
+    const userKey = email ? `ssf_cart_${email}` : "ssf_cart";
 
+    // If user logged in, merge guest cart into user cart first (optional but helpful)
+    if (email) {
+      const guest = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
+      if (guest.length > 0) {
+        const userCart = JSON.parse(localStorage.getItem(userKey) || "[]");
+        // merge guest into userCart
+        guest.forEach((g) => {
+          const idx = userCart.findIndex((u) => u.id === g.id);
+          if (idx >= 0) userCart[idx].qty = (userCart[idx].qty || 0) + (g.qty || 0);
+          else userCart.push(g);
+        });
+        localStorage.setItem(userKey, JSON.stringify(userCart));
+        localStorage.removeItem("ssf_cart"); // clear guest
+      }
+    }
+
+    // load the right cart
+    let cart = JSON.parse(localStorage.getItem(userKey) || "[]");
+    const existIndex = cart.findIndex((c) => c.id === product.id);
     const stock = Number(product.stockQty) || 0;
-    const currentQty = exist?.qty || 0;
+    const currentQty = existIndex >= 0 ? (cart[existIndex].qty || 0) : 0;
 
     if (currentQty >= stock) {
       setStockWarning(`Only ${stock} items available in stock for ${product.title}.`);
@@ -101,17 +123,26 @@ export default function ProductDetail() {
       return;
     }
 
-    if (exist) {
-      exist.qty += 1;
+    if (existIndex >= 0) {
+      cart[existIndex].qty = (cart[existIndex].qty || 0) + 1;
     } else {
-      cart.push({ id: product.id, name: product.title, price: product.price, qty: 1, image: images[0] });
+      cart.push({
+        id: product.id,
+        name: product.title,
+        price: product.price,
+        qty: 1,
+        image: images[0],
+      });
     }
 
-    localStorage.setItem("ssf_cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("storage"));
+    localStorage.setItem(userKey, JSON.stringify(cart));
 
-    setToastMsg("Product added to cart!"); // show toast
-    setTimeout(() => setToastMsg(""), 3000);
+    // notify app via your single event system
+    emitCartUpdate();
+
+    // show toast
+    setToastMsg("Product added to cart!");
+    setTimeout(() => setToastMsg(""), 2000);
   };
 
   const handleMouseMove = (e) => {
@@ -125,13 +156,13 @@ export default function ProductDetail() {
 
   return (
     <div className="detail-container">
-      {toastMsg && <div className="toast-message">{toastMsg}</div>} {/* TOAST MESSAGE */}
+      {toastMsg && <div className="toast show">{toastMsg}</div>}
+
 
       <button onClick={() => nav(-1)} className="back-btn bounce">
         <FaArrowLeft /> Back
       </button>
 
-      {/* LEFT */}
       <div className="detail-left">
         <div
           className={`zoom-box ${zoom ? "active" : ""}`}
@@ -144,7 +175,9 @@ export default function ProductDetail() {
             backgroundSize: zoom ? "260%" : "100%",
           }}
         >
-          <div className="zoom-icon"><FaSearchPlus /></div>
+          <div className="zoom-icon">
+            <FaSearchPlus />
+          </div>
         </div>
 
         {images.length > 1 && (
@@ -161,7 +194,6 @@ export default function ProductDetail() {
         )}
       </div>
 
-      {/* RIGHT */}
       <div className="detail-right fadeInUp">
         <h2 className="detail-title">{product.title}</h2>
         <p className="detail-price">
@@ -194,7 +226,6 @@ export default function ProductDetail() {
         )}
       </div>
 
-      {/* RELATED */}
       <div className="related-section">
         <h3>Related Products</h3>
         <div className="related-scroll">

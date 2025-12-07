@@ -2,17 +2,17 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../Categories.css";
-import { db, auth } from "../firebase"; // import auth here
-import { emitCartUpdate } from "./cartEvents"; // fixed path
+import { db, auth } from "../firebase";
+import { emitCartUpdate } from "./cartEvents";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 
-// Function to safely get primary image
 const getPrimaryImage = (p) => {
   if (Array.isArray(p.images) && p.images.length > 0) {
     const img = p.images[0];
     if (img && typeof img === "string" && img.trim() !== "") return img;
   }
-  if (p.image && typeof p.image === "string" && p.image.trim() !== "") return p.image;
+  if (p.image && typeof p.image === "string" && p.image.trim() !== "")
+    return p.image;
   return "/placeholder.jpg";
 };
 
@@ -26,8 +26,11 @@ export default function CategoriesPage() {
   const [priceFilter, setPriceFilter] = useState(5000);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // NEW — popup message state
   const [popupMsg, setPopupMsg] = useState("");
+
+  // ⭐ MOBILE DROPDOWN STATE
+  const [mobileDropdown, setMobileDropdown] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const ITEMS_PER_PAGE = 20;
 
@@ -46,7 +49,14 @@ export default function CategoriesPage() {
     { id: "kidswear", label: "Kids Wear" },
   ];
 
-  // Read category from URL on first load
+  // Handle screen resize
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Read category from URL
   useEffect(() => {
     const urlCat = new URLSearchParams(location.search).get("cat");
     if (urlCat) {
@@ -55,7 +65,7 @@ export default function CategoriesPage() {
     }
   }, [location.search]);
 
-  // Fetch products from Firestore
+  // FETCH PRODUCTS
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -93,11 +103,13 @@ export default function CategoriesPage() {
     fetchProducts();
   }, []);
 
-  // Filtered products
+  // FILTERED PRODUCTS
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => p.category === selectedCategory)
-      .filter((p) => (p.name || "").toLowerCase().includes(searchText.toLowerCase()))
+      .filter((p) =>
+        (p.name || "").toLowerCase().includes(searchText.toLowerCase())
+      )
       .filter((p) => Number(p.price) <= priceFilter);
   }, [products, selectedCategory, searchText, priceFilter]);
 
@@ -111,9 +123,7 @@ export default function CategoriesPage() {
     if (num >= 1 && num <= totalPages) setCurrentPage(num);
   };
 
-  // Perfect Add to Cart (Works same for logged-in / guest)
   const addToCart = (product) => {
-    // pick key depending on auth state
     const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
 
@@ -147,12 +157,11 @@ export default function CategoriesPage() {
     }
 
     localStorage.setItem(key, JSON.stringify(cart));
-    emitCartUpdate(); // Immediately refresh UI across app
+    emitCartUpdate();
 
     showPopup(`${product.name} added to cart`);
   };
 
-  // Beautiful Meesho-style popup
   const showPopup = (msg) => {
     setPopupMsg(msg);
     setTimeout(() => {
@@ -163,24 +172,75 @@ export default function CategoriesPage() {
   const categoryCount = (catId) =>
     products.filter((p) => p.category === catId).length;
 
+  // CLOSE DROPDOWN ON OUTSIDE CLICK
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.classList.contains("mobile-overlay")) {
+        setMobileDropdown(false);
+        document.body.style.overflow = "auto";
+      }
+    };
+
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
+
+  // LOCK BODY SCROLL WHEN OPEN
+  useEffect(() => {
+    if (mobileDropdown) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+  }, [mobileDropdown]);
+
   return (
     <div className="categories-container">
+      {/* POPUP */}
+      {popupMsg && <div className="popup-toast">{popupMsg}</div>}
 
-      {/* POPUP MESSAGE */}
-      {popupMsg && (
-        <div className="popup-toast">
-          {popupMsg}
+      {/* ⭐ MOBILE CATEGORY BUTTON (ONLY MOBILE) */}
+      {isMobile && (
+        <div
+          className="mobile-category-btn"
+          onClick={() => setMobileDropdown(true)}
+        >
+          ☰ Categories
         </div>
       )}
 
-      {/* Sidebar */}
+      {/* ⭐ MOBILE OVERLAY + SLIDE DOWN MENU (ONLY MOBILE) */}
+      {isMobile && mobileDropdown && (
+        <div className="mobile-overlay">
+          <div className="mobile-category-panel">
+            <h4 className="mobile-cat-title">All Categories</h4>
+
+            {categories.map((cat) => (
+              <div
+                key={cat.id}
+                className="mobile-cat-option"
+                onClick={() => {
+                  setSelectedCategory(cat.id);
+                  setMobileDropdown(false);
+                  navigate(`/categories?cat=${cat.id}`);
+                }}
+              >
+                {cat.label} ({categoryCount(cat.id)})
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* DESKTOP SIDEBAR */}
       <div className="category-sidebar">
         <h5 className="sidebar-title">Categories</h5>
         <ul className="category-list">
           {categories.map((cat) => (
             <li
               key={cat.id}
-              className={`category-item ${selectedCategory === cat.id ? "active" : ""}`}
+              className={`category-item ${selectedCategory === cat.id ? "active" : ""
+                }`}
               onClick={() => {
                 setSelectedCategory(cat.id);
                 setCurrentPage(1);
@@ -193,10 +253,8 @@ export default function CategoriesPage() {
         </ul>
       </div>
 
-      {/* Product Section */}
+      {/* PRODUCTS SECTION */}
       <div className="product-section">
-
-        {/* Search Box */}
         <input
           type="text"
           placeholder="Search products..."
@@ -208,7 +266,6 @@ export default function CategoriesPage() {
           }}
         />
 
-        {/* Price Filter */}
         <div className="price-filter">
           <label>Max Price: ₹{priceFilter}</label>
           <input
@@ -228,7 +285,6 @@ export default function CategoriesPage() {
           {selectedCategory.replace("-", " ").toUpperCase()}
         </h4>
 
-        {/* Product Grid */}
         <div className="product-grid">
           {paginatedProducts.length > 0 ? (
             paginatedProducts.map((p) => (
@@ -237,10 +293,8 @@ export default function CategoriesPage() {
                   src={getPrimaryImage(p)}
                   alt={p.name}
                   className="product-img"
-                  onError={(e) => {
-                    e.target.src = "/placeholder.jpg";
-                  }}
                   onClick={() => navigate(`/product/${p.id}`)}
+                  onError={(e) => (e.target.src = "/placeholder.jpg")}
                 />
 
                 <h5
@@ -253,7 +307,9 @@ export default function CategoriesPage() {
                 <p className="product-price">₹{p.price}</p>
 
                 <p className={p.stockQty > 0 ? "in-stock" : "out-stock"}>
-                  {p.stockQty > 0 ? `${p.stockQty} in stock` : "Out of Stock"}
+                  {p.stockQty > 0
+                    ? `${p.stockQty} in stock`
+                    : "Out of Stock"}
                 </p>
 
                 <button
@@ -270,14 +326,14 @@ export default function CategoriesPage() {
           )}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="pagination">
             <button onClick={() => changePage(currentPage - 1)}>←</button>
             {Array.from({ length: totalPages }).map((_, i) => (
               <span
                 key={i}
-                className={`page-number ${currentPage === i + 1 ? "active-page" : ""}`}
+                className={`page-number ${currentPage === i + 1 ? "active-page" : ""
+                  }`}
                 onClick={() => changePage(i + 1)}
               >
                 {i + 1}

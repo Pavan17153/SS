@@ -1,16 +1,16 @@
-/* ------------------------------
+/* ---------------------------------
    MAIN CONTAINER
---------------------------------*/
+---------------------------------- */
 .detail-container {
   display: flex;
   flex-direction: row;
-  gap: 35px;
-  padding: 25px;
-  max-width: 1250px;
+  gap: 25px;
+  padding: 18px;
+  max-width: 1150px;
   margin: auto;
   flex-wrap: wrap;
-  animation: fadePage 0.6s ease;
   position: relative;
+  animation: fadePage 0.5s ease;
 }
 
 @keyframes fadePage {
@@ -25,57 +25,52 @@
   }
 }
 
-/* ------------------------------
-   BACK BUTTON (Desktop & Mobile)
---------------------------------*/
+/* ---------------------------------
+   BACK BUTTON
+---------------------------------- */
 .back-btn {
   border: none;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 6px 14px;
-  /* compact padding */
-  border-radius: 8px;
+  background: white;
+  padding: 6px 12px;
+  border-radius: 7px;
   font-size: 13px;
-  /* slightly smaller font */
   cursor: pointer;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   gap: 5px;
-  height: 36px;
-  /* reduced height */
-  transition: 0.25s ease;
-  font-weight: 500;
+  height: 32px;
+  position: sticky;
+  top: 12px;
+  z-index: 20;
 }
 
 .back-btn:hover {
-  transform: translateX(-2px) scale(1.05);
   background: #ff4c7d;
   color: white;
 }
 
-/* ------------------------------
-   LEFT PANEL (IMAGE)
---------------------------------*/
+/* ---------------------------------
+   LEFT PANEL IMAGE
+---------------------------------- */
 .detail-left {
   flex: 1;
-  min-width: 330px;
+  min-width: 320px;
 }
 
-/* Zoom image box */
 .zoom-box {
   width: 100%;
-  height: 500px;
-  /* increased height */
-  border-radius: 16px;
+  height: 460px;
+  border-radius: 14px;
   background-repeat: no-repeat;
   background-size: 100%;
   background-position: center;
-  transition: background-size 0.25s ease, transform 0.3s ease;
+  transition: 0.25s ease;
   cursor: zoom-in;
   position: relative;
   overflow: hidden;
   border: 1px solid #f0f0f0;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
 }
 
 .zoom-box:hover {
@@ -87,344 +82,227 @@
   background-size: 260%;
 }
 
-/* Zoom lens icon */
+/* Zoom icon */
 .zoom-icon {
   position: absolute;
-  bottom: 14px;
-  right: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 7px;
-  width: 34px;
-  height: 34px;
+  bottom: 12px;
+  right: 12px;
+  background: white;
+  padding: 6px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
   color: #ff4c7d;
 }
 
-/* Thumbnail images */
+/* Thumbnails */
 .thumbnail-row {
-  margin-top: 15px;
+  margin-top: 10px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   overflow-x: auto;
 }
 
-.thumbnail-row::-webkit-scrollbar {
-  height: 6px;
-}
-
-.thumbnail-row::-webkit-scrollbar-thumb {
-  background: #ffd2de;
-  border-radius: 10px;
-}
-
 .thumb {
-  width: 80px;
-  /* slightly larger */
-  height: 80px;
-  border-radius: 10px;
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
   object-fit: cover;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.thumb:hover {
-  transform: translateY(-4px) scale(1.07);
+  transition: 0.25s;
 }
 
 .thumb.active {
   border-color: #ff4c7d;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
-/* ------------------------------
-   RIGHT PANEL (DETAILS)
---------------------------------*/
+/* ---------------------------------
+   RIGHT DETAILS SECTION
+---------------------------------- */
 .detail-right {
   flex: 1;
-  min-width: 300px;
+  min-width: 280px;
 }
 
 .detail-title {
-  font-size: 30px;
-  font-weight: bold;
+  font-size: 26px;
+  font-weight: 700;
   color: #ff4c7d;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
-  animation: fadeUp 0.5s ease;
+  margin-bottom: 10px;
 }
 
 .detail-price {
-  font-size: 24px;
-  margin: 12px 0;
+  font-size: 22px;
+  margin: 10px 0;
 }
 
 .old {
   text-decoration: line-through;
-  margin-right: 12px;
-  color: #a2a2a2;
+  margin-right: 10px;
+  color: #999;
 }
 
 .new {
   color: #ff2c62;
-  font-weight: bold;
-  font-size: 26px;
+  font-weight: 700;
+  font-size: 25px;
 }
 
 .detail-desc p {
-  margin: 6px 0;
-  line-height: 1.65;
-  font-size: 17px;
-  color: #555;
-  letter-spacing: 0.3px;
+  margin: 5px 0;
+  line-height: 1.6;
+  font-size: 15px;
+  color: #444;
 }
 
-/* STOCK */
+/* Stock */
 .stock {
   font-weight: 600;
   margin-top: 10px;
   color: #333;
 }
 
-/* ADD TO CART BUTTON */
+/* Add to cart button */
 .add-basket-btn {
-  background: linear-gradient(135deg, #ff4c7d, #ff2963);
-  padding: 14px 22px;
+  background: #ff2c62;
+  padding: 12px 18px;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
+  width: 100%;
+  margin-top: 14px;
   transition: 0.25s;
-  width: 210px;
-  margin-top: 10px;
-  box-shadow: 0 8px 20px rgba(255, 76, 125, 0.25);
+  box-shadow: 0 6px 20px rgba(255, 44, 98, 0.25);
 }
 
 .add-basket-btn:hover {
-  transform: scale(1.05) translateY(-3px);
-  box-shadow: 0 12px 25px rgba(255, 76, 125, 0.35);
+  transform: scale(1.04);
 }
 
+/* Disabled */
 .add-basket-btn.disabled {
-  cursor: not-allowed;
   background: #ccc;
+  cursor: not-allowed;
 }
 
-/* Pulsing animation */
-.pulse {
-  animation: pulseBtn 1.6s infinite;
-}
-
-@keyframes pulseBtn {
-  0% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.07);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* ------------------------------
-   SUCCESS / STOCK POPUP MESSAGE
-   TOP OF SCREEN (AMAZON STYLE)
---------------------------------*/
-.toast-message {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #232f3e;
-  /* Amazon-like dark bg */
-  color: #fff;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  z-index: 9999;
-  opacity: 0;
-  pointer-events: none;
-  animation: showToast 0.5s forwards;
-}
-
-@keyframes showToast {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -20px);
-  }
-
-  10% {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-
-  90% {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -20px);
-  }
-}
-
-/* ------------------------------
-   RELATED PRODUCTS
---------------------------------*/
+/* ---------------------------------
+   RELATED PRODUCTS (Meesho style)
+---------------------------------- */
 .related-section {
   width: 100%;
-  margin-top: 45px;
+  margin-top: 35px;
 }
 
 .related-section h3 {
-  font-size: 22px;
-  margin-bottom: 18px;
+  font-size: 20px;
+  margin-bottom: 14px;
   color: #ff4c7d;
 }
 
 .related-scroll {
   display: flex;
-  gap: 18px;
+  gap: 14px;
   overflow-x: auto;
-  padding-bottom: 15px;
-  scroll-behavior: smooth;
-}
-
-.related-scroll::-webkit-scrollbar {
-  height: 6px;
-}
-
-.related-scroll::-webkit-scrollbar-thumb {
-  background: #ffd2de;
-  border-radius: 10px;
+  padding-bottom: 10px;
 }
 
 .related-card {
-  min-width: 170px;
-  height: 320px;
-  /* increased height */
+  min-width: 155px;
+  height: 270px;
   background: #ffffff;
-  padding: 12px;
-  border-radius: 14px;
+  padding: 10px;
+  border-radius: 12px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   text-align: center;
-  transition: 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.related-card:hover {
-  transform: translateY(-6px) scale(1.05);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  transition: 0.25s;
 }
 
 .related-img {
   width: 100%;
-  height: 220px;
-  /* increased height */
-  border-radius: 12px;
+  height: 185px;
+  border-radius: 10px;
   object-fit: cover;
 }
 
 .related-name {
   font-weight: 600;
-  font-size: 14px;
   margin-top: 6px;
+  font-size: 13px;
 }
 
 .related-price {
   font-weight: 700;
   color: #ff4c7d;
-  font-size: 16px;
+  font-size: 15px;
 }
 
-/* ------------------------------
-   ANIMATIONS
---------------------------------*/
-.fadeInUp {
-  animation: fadeUp 0.5s ease-in-out;
+/* ---------------------------------
+   MESSHO STYLE TOAST
+---------------------------------- */
+.toast {
+  position: fixed;
+  bottom: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff2c62;
+  padding: 12px 24px;
+  color: white;
+  font-weight: 600;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: 0.35s ease-out;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 9999;
 }
 
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.toast.show {
+  bottom: 25px;
 }
 
-/* ------------------------------
-   RESPONSIVE
---------------------------------*/
+/* ---------------------------------
+   MOBILE VIEW (Meesho style)
+---------------------------------- */
 @media (max-width: 768px) {
   .detail-container {
     flex-direction: column;
-    padding: 15px;
+    padding: 12px;
   }
 
   .zoom-box {
-    height: 380px;
+    height: 360px;
   }
 
   .detail-title {
-    font-size: 24px;
-  }
-
-  .thumbnail-row {
-    justify-content: flex-start;
+    font-size: 22px;
   }
 
   .add-basket-btn {
-    width: 100%;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .back-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    height: 28px;
   }
 
   .related-card {
-    min-width: 140px;
-    height: 280px;
-    /* taller for mobile */
+    min-width: 135px;
+    height: 245px;
   }
 
   .related-img {
-    height: 180px;
-    /* taller for mobile */
-  }
-
-  /* MOBILE BACK BUTTON */
-  .back-btn {
-    font-size: 12px;
-    padding: 4px 10px;
-    /* Smaller on mobile */
-    border-radius: 4px;
-  }
-
-  .back-btn svg {
-    width: 14px;
-    /* smaller icon */
-    height: 14px;
-  }
-
-  .toast-message {
-    width: 90%;
-    font-size: 13px;
-    padding: 8px 14px;
+    height: 170px;
   }
 }
