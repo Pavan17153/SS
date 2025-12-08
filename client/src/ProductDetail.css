@@ -26,7 +26,17 @@
 }
 
 /* ---------------------------------
-   BACK BUTTON
+   BACK BUTTON WRAPPER
+---------------------------------- */
+.back-btn-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+/* ---------------------------------
+   BACK BUTTON (DESKTOP)
 ---------------------------------- */
 .back-btn {
   border: none;
@@ -51,7 +61,7 @@
 }
 
 /* ---------------------------------
-   LEFT PANEL IMAGE
+   LEFT IMAGE PANEL
 ---------------------------------- */
 .detail-left {
   flex: 1;
@@ -123,7 +133,7 @@
 }
 
 /* ---------------------------------
-   RIGHT DETAILS SECTION
+   RIGHT DETAILS PANEL
 ---------------------------------- */
 .detail-right {
   flex: 1;
@@ -161,14 +171,16 @@
   color: #444;
 }
 
-/* Stock */
+/* Stock text (desktop) */
 .stock {
   font-weight: 600;
   margin-top: 10px;
   color: #333;
 }
 
-/* Add to cart button */
+/* ---------------------------------
+   ADD TO CART
+---------------------------------- */
 .add-basket-btn {
   background: #ff2c62;
   padding: 12px 18px;
@@ -188,14 +200,13 @@
   transform: scale(1.04);
 }
 
-/* Disabled */
 .add-basket-btn.disabled {
   background: #ccc;
   cursor: not-allowed;
 }
 
 /* ---------------------------------
-   RELATED PRODUCTS (Meesho style)
+   RELATED PRODUCTS
 ---------------------------------- */
 .related-section {
   width: 100%;
@@ -247,7 +258,7 @@
 }
 
 /* ---------------------------------
-   MESSHO STYLE TOAST
+   TOAST
 ---------------------------------- */
 .toast {
   position: fixed;
@@ -269,32 +280,81 @@
   bottom: 25px;
 }
 
-/* ---------------------------------
-   MOBILE VIEW (Meesho style)
----------------------------------- */
+/* ======================================================
+   🔥 MOBILE VIEW — Updated with Stock Badge + Slide Cart
+====================================================== */
 @media (max-width: 768px) {
+
   .detail-container {
     flex-direction: column;
     padding: 12px;
   }
 
+  /* Smaller back button */
+  .back-btn {
+    background: #ff4d6d;
+    color: white;
+    padding: 14px 10px;
+    border-radius: 9px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    height: auto;
+    min-width: auto;
+  }
+
+  /* Meesho-style stock badge */
+  .stock-badge {
+    margin-top: 10px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  .stock-badge.instock {
+    background: #e2ffe9;
+    color: #0e8a29;
+  }
+
+  .stock-badge.out {
+    background: #ffe6e6;
+    color: #d10000;
+  }
+
+  /* Slide-in Cart — Swiggy Style */
+  .slide-cart {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 20px;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(100%);
+    transition: 0.35s ease-in-out;
+    z-index: 99999;
+  }
+
+  .slide-cart.open {
+    transform: translateY(0%);
+  }
+
+  .slide-cart-btn {
+    width: 100%;
+    background: #ff2c62;
+    color: white;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+  }
+
+  /* Smaller images */
   .zoom-box {
     height: 360px;
-  }
-
-  .detail-title {
-    font-size: 22px;
-  }
-
-  .add-basket-btn {
-    font-size: 15px;
-    border-radius: 10px;
-  }
-
-  .back-btn {
-    font-size: 11px;
-    padding: 4px 8px;
-    height: 28px;
   }
 
   .related-card {
@@ -304,5 +364,57 @@
 
   .related-img {
     height: 170px;
+  }
+}
+
+/* ---------------------------------
+   BEST SELLER TAG (Desktop + Mobile)
+---------------------------------- */
+.best-seller {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, #ff9800, #ff5722);
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  z-index: 50;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Ribbon arrow effect */
+.best-seller::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-top: 12px solid #ff5722;
+  border-bottom: 12px solid transparent;
+  border-left: 6px solid transparent;
+}
+
+/* --------------------------
+   MOBILE VIEW — Adjust Size
+--------------------------- */
+@media (max-width: 768px) {
+  .best-seller {
+    top: 10px;
+    left: 10px;
+    padding: 5px 10px;
+    font-size: 11px;
+    border-radius: 5px;
+  }
+
+  .best-seller::after {
+    right: -5px;
+    border-top: 11px solid #ff5722;
+    border-bottom: 11px solid transparent;
+    border-left: 5px solid transparent;
   }
 }

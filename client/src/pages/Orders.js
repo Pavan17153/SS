@@ -108,7 +108,6 @@ export default function Orders() {
 
   const isStepActive = (currentStatus, step) => {
     const rank = { ordered: 1, processing: 2, shipped: 3, delivered: 4 };
-    // guard:
     const cur = (currentStatus || "").toLowerCase();
     return (rank[cur] || 0) >= (rank[step.toLowerCase()] || 0);
   };
@@ -118,26 +117,34 @@ export default function Orders() {
 
   return (
     <>
+      {/* IMAGE POPUP */}
       {popupImage && (
         <div className="img-popup-overlay" onClick={() => setPopupImage("")}>
           <img src={popupImage} className="img-popup" alt="Preview" />
         </div>
       )}
 
+      {/* AMAZON-STYLE TOP SLIDE CANCEL POPUP */}
       {cancelPopup.show && (
-        <div className="cancel-popup-overlay">
-          <div className="cancel-popup-box">
+        <div className="cancel-top-overlay">
+          <div className="cancel-top-popup">
             <h3>Cancel Order?</h3>
             <p>Are you sure you want to cancel this order?</p>
 
-            <div className="popup-buttons">
-              <button className="popup-cancel" onClick={closeCancelPopup}>No</button>
-              <button className="popup-confirm" onClick={confirmCancel}>Yes, Cancel</button>
+            <div className="cancel-top-btns">
+              <button className="cancel-top-btn-no" onClick={closeCancelPopup}>
+                No
+              </button>
+
+              <button className="cancel-top-btn-yes" onClick={confirmCancel}>
+                Yes, Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* SUCCESS POPUP */}
       {successPopup && (
         <div className="success-popup">
           <p>Order Cancelled Successfully</p>
@@ -171,6 +178,7 @@ export default function Orders() {
 
           {filteredOrders.map((order) => (
             <div key={order.id} className="order-card animate-card">
+
               <div className="order-top">
                 <div>
                   <p><strong>Order ID:</strong> {order.id}</p>

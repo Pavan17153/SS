@@ -89,29 +89,25 @@ export default function ProductDetail() {
 
   const images = product.images.length ? product.images : [getPrimaryImage(product)];
 
-  /** ADD TO CART FIXED: respects logged-in key, merges guest cart if needed, emits cartEvent */
   const addToCart = () => {
-    // determine storage key depending on auth state
     const email = auth.currentUser?.email || null;
     const userKey = email ? `ssf_cart_${email}` : "ssf_cart";
 
-    // If user logged in, merge guest cart into user cart first (optional but helpful)
     if (email) {
       const guest = JSON.parse(localStorage.getItem("ssf_cart") || "[]");
       if (guest.length > 0) {
         const userCart = JSON.parse(localStorage.getItem(userKey) || "[]");
-        // merge guest into userCart
+
         guest.forEach((g) => {
           const idx = userCart.findIndex((u) => u.id === g.id);
           if (idx >= 0) userCart[idx].qty = (userCart[idx].qty || 0) + (g.qty || 0);
           else userCart.push(g);
         });
         localStorage.setItem(userKey, JSON.stringify(userCart));
-        localStorage.removeItem("ssf_cart"); // clear guest
+        localStorage.removeItem("ssf_cart");
       }
     }
 
-    // load the right cart
     let cart = JSON.parse(localStorage.getItem(userKey) || "[]");
     const existIndex = cart.findIndex((c) => c.id === product.id);
     const stock = Number(product.stockQty) || 0;
@@ -136,11 +132,8 @@ export default function ProductDetail() {
     }
 
     localStorage.setItem(userKey, JSON.stringify(cart));
-
-    // notify app via your single event system
     emitCartUpdate();
 
-    // show toast
     setToastMsg("Product added to cart!");
     setTimeout(() => setToastMsg(""), 2000);
   };
@@ -158,10 +151,11 @@ export default function ProductDetail() {
     <div className="detail-container">
       {toastMsg && <div className="toast show">{toastMsg}</div>}
 
-
-      <button onClick={() => nav(-1)} className="back-btn bounce">
-        <FaArrowLeft /> Back
-      </button>
+      <div className="back-btn-wrapper">
+        <button onClick={() => nav(-1)} className="back-btn bounce">
+          ← Back
+        </button>
+      </div>
 
       <div className="detail-left">
         <div
@@ -175,6 +169,9 @@ export default function ProductDetail() {
             backgroundSize: zoom ? "260%" : "100%",
           }}
         >
+          {/* ⭐ MERGED BLOCK YOU ASKED */}
+          <div className="best-seller">Best Seller</div>
+
           <div className="zoom-icon">
             <FaSearchPlus />
           </div>
@@ -196,6 +193,7 @@ export default function ProductDetail() {
 
       <div className="detail-right fadeInUp">
         <h2 className="detail-title">{product.title}</h2>
+
         <p className="detail-price">
           <span className="old">₹{product.original}</span>
           <span className="new">₹{product.price}</span>
@@ -230,7 +228,11 @@ export default function ProductDetail() {
         <h3>Related Products</h3>
         <div className="related-scroll">
           {related.map((r) => (
-            <div className="related-card" key={r.id} onClick={() => nav(`/product/${r.id}`)}>
+            <div
+              className="related-card"
+              key={r.id}
+              onClick={() => nav(`/product/${r.id}`)}
+            >
               <img src={r.image} className="related-img" alt="" />
               <p className="related-name">{r.title}</p>
               <p className="related-price">₹{r.price}</p>

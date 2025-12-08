@@ -21,7 +21,7 @@
   padding: 25px;
   background: #ffffff;
   border-right: 1px solid #e2e2e2;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.06);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
   position: sticky;
   top: 0;
 }
@@ -29,7 +29,7 @@
 .orders-wrapper.dark .orders-sidebar {
   background: #2b2c2f;
   border-color: #444;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.3);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
 }
 
 .orders-filter-select {
@@ -77,17 +77,16 @@
 /* ORDER CARD */
 /* ------------------------------------------------------- */
 .order-card {
-  background: rgba(255,255,255,0.9);
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid #eaeaea;
   margin-bottom: 25px;
-  backdrop-filter: blur(10px);
   transition: 0.3s ease;
 }
 
 .orders-wrapper.dark .order-card {
-  background: rgba(40,40,40,0.9);
+  background: rgba(40, 40, 40, 0.95);
   border-color: #555;
 }
 
@@ -96,13 +95,15 @@
 }
 
 @keyframes fadeSlide {
-  from {opacity: 0; transform: translateY(15px);}
-  to {opacity: 1; transform: translateY(0);}
-}
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
 
-.order-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.1);
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ------------------------------------------------------- */
@@ -111,30 +112,18 @@
 .order-top {
   display: flex;
   justify-content: space-between;
-  padding-bottom: 12px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #ddd;
 }
 
 .cancel-tag {
-  padding: 5px 12px;
+  padding: 4px 10px;
   color: white;
   background: #e74040;
   border-radius: 6px;
   display: inline-block;
-  margin-top: 8px;
-  animation: popBadge 0.4s ease;
-}
-
-@keyframes popBadge {
-  from {transform: scale(0.6);}
-  to {transform: scale(1);}
-}
-
-.address-text {
-  margin-top: 8px;
-  font-size: 14px;
-  line-height: 19px;
-  opacity: 0.9;
+  font-size: 13px;
+  margin-top: 6px;
 }
 
 /* ------------------------------------------------------- */
@@ -142,7 +131,7 @@
 /* ------------------------------------------------------- */
 .order-item {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   padding: 12px;
   background: #f5f7fa;
   border-radius: 10px;
@@ -152,16 +141,11 @@
   transition: 0.3s;
 }
 
-.order-item:hover {
-  transform: scale(1.03);
-}
-
 .order-img {
-  width: 65px;
-  height: 65px;
+  width: 62px;
+  height: 62px;
   border-radius: 8px;
   object-fit: cover;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 
 .orders-wrapper.dark .order-item {
@@ -170,178 +154,288 @@
 }
 
 /* ------------------------------------------------------- */
-/* CANCEL BUTTON */
-/* ------------------------------------------------------- */
-.order-cancel-btn {
-  width: 100%;
-  margin-top: 15px;
-  border: none;
-  padding: 12px;
-  font-weight: bold;
-  color: white;
-  background: #d94343;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.order-cancel-btn:hover {
-  transform: translateY(-2px);
-  background: #c03030;
-}
-
-.order-cancel-btn.disabled {
-  background: #999 !important;
-  cursor: not-allowed !important;
-  opacity: 0.7;
-}
-
-/* ------------------------------------------------------- */
 /* TRACK STATUS */
 /* ------------------------------------------------------- */
 .track-box {
-  margin-top: 22px;
+  margin-top: 20px;
 }
 
 .track-status-container {
   display: flex;
   justify-content: space-between;
-  gap: 15px;
+  gap: 10px;
   background: #eef0f4;
-  padding: 12px;
+  padding: 10px;
   border-radius: 12px;
 }
 
 .track-step {
   flex: 1;
-  padding: 10px;
+  padding: 8px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   background: #cfd2d6;
   border-radius: 6px;
-  transition: 0.4s;
 }
 
 .track-step.active {
   background: #2ecc71;
   color: white;
   font-weight: bold;
-  box-shadow: 0 0 10px rgba(46,204,113,0.7);
   transform: scale(1.05);
 }
 
 /* ------------------------------------------------------- */
-/* IMAGE POPUP */
+/* POPUPS + SUCCESS */
 /* ------------------------------------------------------- */
-.img-popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 3000;
-  animation: fadeIn 0.4s ease;
-}
-
-.img-popup {
-  width: 380px;
-  max-width: 90%;
-  border-radius: 12px;
-  animation: scaleIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {opacity: 0;}
-  to {opacity: 1;}
-}
-
-@keyframes scaleIn {
-  from {transform: scale(0.6);}
-  to {transform: scale(1);}
-}
-
-/* ------------------------------------------------------- */
-/* CANCEL CONFIRM POPUP */
-/* ------------------------------------------------------- */
+.img-popup-overlay,
 .cancel-popup-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 4000;
-  animation: fadeIn 0.3s ease;
+  z-index: 3000;
 }
 
-.cancel-popup-box {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  width: 330px;
-  animation: popIn 0.35s ease;
-  text-align: center;
-}
-
-@keyframes popIn {
-  from {transform: scale(0.6); opacity: 0;}
-  to {transform: scale(1); opacity: 1;}
-}
-
-.popup-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
-.popup-cancel,
-.popup-confirm {
-  flex: 1;
-  padding: 10px;
-  margin: 0 5px;
-  border: none;
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.popup-cancel {
-  background: #7a7a7a;
-}
-
-.popup-confirm {
-  background: #d94343;
-}
-
-.popup-confirm:hover {
-  background: #c53030;
-}
-
-/* ------------------------------------------------------- */
-/* SUCCESS POPUP */
-/* ------------------------------------------------------- */
+/* 🔥 SUCCESS POPUP (TOP CENTER – NEW) */
 .success-popup {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
   background: #2ecc71;
   padding: 15px 20px;
   border-radius: 10px;
   color: white;
   font-weight: bold;
   z-index: 5000;
-  animation: toastIn 0.5s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-@keyframes toastIn {
-  from {opacity: 0; transform: translateY(20px);}
-  to {opacity: 1; transform: translateY(0);}
+/* ------------------------------------------------------------- */
+/*     📱 MOBILE VIEW (Meesho style + floating filter bar)       */
+/* ------------------------------------------------------------- */
+@media (max-width: 768px) {
+
+  .orders-wrapper {
+    flex-direction: column;
+  }
+
+  /* HIDE SIDEBAR */
+  .orders-sidebar {
+    display: none;
+  }
+
+  /* ------------------------------------------------------- */
+  /* MOBILE FLOATING FILTER + DARK MODE (NEW)                */
+  /* ------------------------------------------------------- */
+  .floating-filter-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: white;
+    padding: 10px 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+  }
+
+  .floating-filter-select {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    background: #fafafa;
+    font-size: 14px;
+  }
+
+  .floating-theme-btn {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #222;
+    color: white;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  /* ------------------------------------------------------- */
+  /* ORDER CARDS                                             */
+  /* ------------------------------------------------------- */
+  .orders-container {
+    padding: 15px;
+  }
+
+  .orders-heading {
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .order-card {
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+  }
+
+  .order-top {
+    flex-direction: column;
+    gap: 4px;
+    border-bottom: none;
+    margin-bottom: 8px;
+  }
+
+  .order-date {
+    font-size: 13px;
+    opacity: 0.8;
+  }
+
+  /* COMPACT ITEM */
+  .order-item {
+    padding: 10px;
+  }
+
+  .order-img {
+    width: 55px;
+    height: 55px;
+  }
+
+  /* ------------------------------------------------------- */
+  /* 🔥 MOBILE + DESKTOP SAME CANCEL BUTTON STYLE            */
+  /* ------------------------------------------------------- */
+  .order-cancel-btn {
+    padding: 12px;
+    font-size: 15px;
+    background: #ff4b61;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    width: 100%;
+    margin-top: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(255, 0, 80, 0.25);
+  }
+
+  .order-cancel-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* TRACK */
+  .track-status-container {
+    gap: 5px;
+    padding: 8px;
+  }
+
+  .track-step {
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  /* POPUPS */
+  .cancel-popup-box {
+    width: 85%;
+    padding: 18px;
+  }
+
+  .img-popup {
+    width: 85%;
+  }
+}
+
+/* ------------------------------------------------------------- */
+/* DESKTOP CANCEL BUTTON — SAME AS MOBILE (NEW)                  */
+/* ------------------------------------------------------------- */
+@media (min-width: 769px) {
+  .order-cancel-btn {
+    padding: 12px;
+    font-size: 15px;
+    background: #ff4b61;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    width: 100%;
+    margin-top: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(255, 0, 80, 0.25);
+  }
+}
+
+/* ------------------------------------------------------------- */
+/* ⭐ AMAZON-STYLE CANCEL CONFIRMATION POPUP (TOP CENTER) ⭐ */
+/* ------------------------------------------------------------- */
+
+.cancel-top-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 6000;
+}
+
+/* MAIN POPUP BOX */
+.cancel-top-popup {
+  margin-top: 25px;
+  width: 90%;
+  max-width: 420px;
+  background: white;
+  padding: 20px;
+  text-align: center;
+  border-radius: 14px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.25);
+  animation: amazonDrop 0.35s ease forwards;
+}
+
+/* ANIMATION */
+@keyframes amazonDrop {
+  from {
+    transform: translateY(-120px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* BUTTONS */
+.cancel-top-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.cancel-top-btn-no {
+  flex: 1;
+  background: #dcdcdc;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+}
+
+.cancel-top-btn-yes {
+  flex: 1;
+  background: #ff3b30;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+}
+
+/* Works same for mobile & desktop */
+@media (max-width: 768px) {
+  .cancel-top-popup {
+    width: 88%;
+    padding: 18px;
+  }
 }
