@@ -1,4 +1,4 @@
-﻿﻿// src/pages/Checkout.js
+﻿// src/pages/Checkout.js
 import React, { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
 import {
@@ -8,7 +8,14 @@ import {
   sendPasswordResetEmail,
   fetchSignInMethodsForEmail,
 } from "firebase/auth";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  Timestamp,
+  doc,
+  updateDoc,
+  getDoc,
+} from "firebase/firestore";
 import RazorpayPayment from "./RazorpayPayment";
 import EmailExistPopup from "./EmailExistPopup";
 import LoginPopup from "./LoginPopup";
@@ -16,16 +23,18 @@ import "../Checkout.css";
 import "./PopupStyles.css";
 
 const INDIA_STATES = [
-  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana",
-  "Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur",
-  "Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana",
-  "Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Delhi","Jammu & Kashmir","Ladakh","Puducherry"
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
+  "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
+  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu & Kashmir", "Ladakh", "Puducherry"
 ];
 
 function generateRandomPassword(length = 12) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
   let pw = "";
-  for (let i = 0; i < length; i++) pw += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < length; i++)
+    pw += chars.charAt(Math.floor(Math.random() * chars.length));
   return pw;
 }
 
@@ -91,7 +100,7 @@ export default function Checkout() {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUserEmail(user.email);
-        setForm(prev => ({ ...prev, email: user.email }));
+        setForm((prev) => ({ ...prev, email: user.email }));
         setCart(loadCorrectCart());
       } else {
         setUserEmail("");
@@ -104,30 +113,43 @@ export default function Checkout() {
   useEffect(() => {
     const q = (form.state || "").trim().toLowerCase();
     if (!q) return setStateSuggestions([]);
-    const matched = INDIA_STATES.filter((s) => s.toLowerCase().startsWith(q)).slice(0, 8);
+    const matched = INDIA_STATES.filter((s) =>
+      s.toLowerCase().startsWith(q)
+    ).slice(0, 8);
     setStateSuggestions(matched);
   }, [form.state]);
 
   const handleInput = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const validate = () => {
-    const required = ["firstName","lastName","address1","address2","city","state","pin","phone","email"];
+    const required = [
+      "firstName",
+      "lastName",
+      "address1",
+      "address2",
+      "city",
+      "state",
+      "pin",
+      "phone",
+      "email",
+    ];
     for (const key of required) {
       if (!form[key] || String(form[key]).trim() === "") {
         return { ok: false, field: key };
       }
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return { ok: false, field: "email" };
-    if (!/^\d{7,15}$/.test(form.phone.replace(/\D/g, ""))) return { ok: false, field: "phone" };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      return { ok: false, field: "email" };
+    if (!/^\d{7,15}$/.test(form.phone.replace(/\D/g, "")))
+      return { ok: false, field: "phone" };
     if (!agreeTerms) return { ok: false, field: "agreeTerms" };
     if (!cart || cart.length === 0) return { ok: false, field: "cart" };
     return { ok: true };
   };
 
-  // ⭐ NEW — auto-hide popup message after 7 seconds
   useEffect(() => {
     if (!infoMessage) return;
     const timer = setTimeout(() => setInfoMessage(null), 7000);
@@ -139,14 +161,27 @@ export default function Checkout() {
 
     const v = validate();
     if (!v.ok) {
-      if (v.field === "agreeTerms") setInfoMessage({ type: "error", text: "Please accept terms & conditions." });
-      else if (v.field === "cart") setInfoMessage({ type: "error", text: "Your cart is empty." });
-      else setInfoMessage({ type: "error", text: `Please fill required field: ${v.field}` });
+      if (v.field === "agreeTerms")
+        setInfoMessage({
+          type: "error",
+          text: "Please accept terms & conditions.",
+        });
+      else if (v.field === "cart")
+        setInfoMessage({ type: "error", text: "Your cart is empty." });
+      else
+        setInfoMessage({
+          type: "error",
+          text: `Please fill required field: ${v.field}`,
+        });
       return;
     }
 
     const email = form.email.trim().toLowerCase();
-    if (!email) return setInfoMessage({ type: "error", text: "Please provide a valid email." });
+    if (!email)
+      return setInfoMessage({
+        type: "error",
+        text: "Please provide a valid email.",
+      });
 
     const currentUser = auth.currentUser;
     if (currentUser && currentUser.email.toLowerCase() === email) {
@@ -180,16 +215,46 @@ export default function Checkout() {
         }
       }
 
-      try { await sendPasswordResetEmail(auth, email); } catch {}
+      try {
+        await sendPasswordResetEmail(auth, email);
+      } catch { }
 
       setProceedToPayment(true);
       setCheckingEmail(false);
-
     } catch (err) {
-      setInfoMessage({ type: "error", text: "Error checking email registration. Try again." });
+      setInfoMessage({
+        type: "error",
+        text: "Error checking email registration. Try again.",
+      });
       setCheckingEmail(false);
     }
   };
+
+  //NEW FUNCTION — Reduce stock after successful payment
+  // Reduce stock in Firestore after successful payment
+  const reduceStockInFirestore = async () => {
+    for (const item of cart) {
+
+      // IMPORTANT: fallback id support
+      const pid = item.productId || item.id;
+      if (!pid) continue;
+
+      const productRef = doc(db, "products", pid);
+      const snap = await getDoc(productRef);
+      if (!snap.exists()) continue;
+
+      const currentStock = snap.data().stockQty || 0;
+      const reduceBy = item.qty || 0;
+      const newStock = Math.max(currentStock - reduceBy, 0);
+
+      await updateDoc(productRef, {
+        stockQty: newStock,
+      });
+    }
+  };
+
+
+
 
   useEffect(() => {
     const handler = async (e) => {
@@ -197,15 +262,22 @@ export default function Checkout() {
       if (!paymentId) return;
 
       setLoadingSave(true);
+
       try {
         const orderEmail = form.email.trim().toLowerCase();
         const currentUser = auth.currentUser;
 
         if (!currentUser || currentUser.email.toLowerCase() !== orderEmail) {
-          setInfoMessage({ type: "error", text: "Session expired. Please login again." });
+          setInfoMessage({
+            type: "error",
+            text: "Session expired. Please login again.",
+          });
           setLoadingSave(false);
           return;
         }
+
+        // ⭐⭐⭐ REDUCE STOCK BEFORE SAVING ORDER ⭐⭐⭐
+        await reduceStockInFirestore();
 
         await saveOrderToFirestore(orderEmail, paymentId);
 
@@ -220,16 +292,19 @@ export default function Checkout() {
         if (accountCreatedEmail) {
           setInfoMessage({
             type: "success",
-            text: `Account created for email: ${accountCreatedEmail}. Please check your inbox (and spam folder) to reset your password.`
+            text: `Account created for email: ${accountCreatedEmail}. Please check your inbox (and spam folder) to reset your password.`,
           });
           setAccountCreatedEmail("");
-          setTimeout(() => window.location.href = "/orders", 7000);
+          setTimeout(() => (window.location.href = "/orders"), 7000);
         } else {
-          setInfoMessage({ type: "success", text: "Order saved! Redirecting…" });
-          setTimeout(() => window.location.href = "/orders", 900);
+          setInfoMessage({
+            type: "success",
+            text: "Order saved! Redirecting…",
+          });
+          setTimeout(() => (window.location.href = "/orders"), 900);
         }
-
-      } catch {
+      } catch (err) {
+        console.error("Stock/Order Error:", err);
         setInfoMessage({ type: "error", text: "Could not save order." });
       } finally {
         setLoadingSave(false);
@@ -247,7 +322,8 @@ export default function Checkout() {
       qty: item.qty || 1,
       image: item.image || "",
       category: item.category || "",
-      subCategory: item.subCategory || ""
+      subCategory: item.subCategory || "",
+      productId: item.productId || "",
     }));
 
     await addDoc(collection(db, "orders"), {
@@ -271,7 +347,10 @@ export default function Checkout() {
   const handleLoginSuccess = () => {
     setLoginPopupVisible(false);
     setCart(loadCorrectCart());
-    setInfoMessage({ type: "success", text: "Logged in. Click Pay Now again." });
+    setInfoMessage({
+      type: "success",
+      text: "Logged in. Click Pay Now again.",
+    });
   };
 
   return (
@@ -284,8 +363,10 @@ export default function Checkout() {
         )}
       </div>
 
-      <div className="checkout-grid" style={{ maxWidth: 1150, margin: "18px auto 40px" }}>
-        
+      <div
+        className="checkout-grid"
+        style={{ maxWidth: 1150, margin: "18px auto 40px" }}
+      >
         {/* LEFT */}
         <div className="checkout-left">
           <h2>Billing Details</h2>
@@ -293,28 +374,85 @@ export default function Checkout() {
           {userEmail ? (
             <p className="small-muted">Logged in as: {userEmail}</p>
           ) : (
-            <p className="small-muted">Returning customer? <a href="/login">Click here to login</a></p>
+            <p className="small-muted">
+              Returning customer? <a href="/login">Click here to login</a>
+            </p>
           )}
 
           <div className="billing-form">
             <div className="form-row">
-              <input type="text" name="firstName" placeholder="First name *" value={form.firstName} onChange={handleInput} />
-              <input type="text" name="lastName" placeholder="Last name *" value={form.lastName} onChange={handleInput} />
+              <input
+                type="text"
+                name="firstName"
+                placeholder="First name *"
+                value={form.firstName}
+                onChange={handleInput}
+              />
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Last name *"
+                value={form.lastName}
+                onChange={handleInput}
+              />
             </div>
 
-            <input type="text" name="company" placeholder="Company name (optional)" value={form.company} onChange={handleInput} />
-            <input type="text" name="country" placeholder="Country *" value={form.country} onChange={handleInput} />
-            <input type="text" name="address1" placeholder="Street address *" value={form.address1} onChange={handleInput} />
-            <input type="text" name="address2" placeholder="Apartment, suite (optional) *" value={form.address2} onChange={handleInput} />
+            <input
+              type="text"
+              name="company"
+              placeholder="Company name (optional)"
+              value={form.company}
+              onChange={handleInput}
+            />
+            <input
+              type="text"
+              name="country"
+              placeholder="Country *"
+              value={form.country}
+              onChange={handleInput}
+            />
+            <input
+              type="text"
+              name="address1"
+              placeholder="Street address *"
+              value={form.address1}
+              onChange={handleInput}
+            />
+            <input
+              type="text"
+              name="address2"
+              placeholder="Apartment, suite (optional) *"
+              value={form.address2}
+              onChange={handleInput}
+            />
 
             <div className="form-row">
-              <input type="text" name="city" placeholder="City *" value={form.city} onChange={handleInput} />
+              <input
+                type="text"
+                name="city"
+                placeholder="City *"
+                value={form.city}
+                onChange={handleInput}
+              />
               <div style={{ position: "relative", flex: 1 }}>
-                <input type="text" name="state" placeholder="State *" value={form.state} onChange={handleInput} autoComplete="off" />
+                <input
+                  type="text"
+                  name="state"
+                  placeholder="State *"
+                  value={form.state}
+                  onChange={handleInput}
+                  autoComplete="off"
+                />
                 {stateSuggestions.length > 0 && (
                   <div className="state-suggestions">
                     {stateSuggestions.map((s, idx) => (
-                      <div key={idx} className="state-suggestion-item" onClick={() => setForm(prev => ({ ...prev, state: s }))}>
+                      <div
+                        key={idx}
+                        className="state-suggestion-item"
+                        onClick={() =>
+                          setForm((prev) => ({ ...prev, state: s }))
+                        }
+                      >
                         {s}
                       </div>
                     ))}
@@ -324,21 +462,53 @@ export default function Checkout() {
             </div>
 
             <div className="form-row">
-              <input type="text" name="pin" placeholder="PIN Code *" value={form.pin} onChange={handleInput} />
-              <input type="text" name="phone" placeholder="Phone *" value={form.phone} onChange={handleInput} />
+              <input
+                type="text"
+                name="pin"
+                placeholder="PIN Code *"
+                value={form.pin}
+                onChange={handleInput}
+              />
+              <input
+                type="text"
+                name="phone"
+                placeholder="Phone *"
+                value={form.phone}
+                onChange={handleInput}
+              />
             </div>
 
-            <input type="email" name="email" placeholder="Email address *" value={form.email} onChange={handleInput} />
-            <textarea name="orderNotes" placeholder="Order notes (optional)" value={form.orderNotes} onChange={handleInput} />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email address *"
+              value={form.email}
+              onChange={handleInput}
+            />
+            <textarea
+              name="orderNotes"
+              placeholder="Order notes (optional)"
+              value={form.orderNotes}
+              onChange={handleInput}
+            />
 
             {!userEmail && (
               <div style={{ marginTop: 10 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="checkbox" checked={createAccount} onChange={() => setCreateAccount(!createAccount)} />
-                  <span>Create account for faster checkout & order tracking</span>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={createAccount}
+                    onChange={() => setCreateAccount(!createAccount)}
+                  />
+                  <span>
+                    Create account for faster checkout & order tracking
+                  </span>
                 </label>
                 <p style={{ fontSize: 13, color: "#444", marginTop: 6 }}>
-                  If you don't create an account explicitly we may create one silently to save this order.
+                  If you don't create an account explicitly we may create one
+                  silently to save this order.
                 </p>
               </div>
             )}
@@ -352,18 +522,33 @@ export default function Checkout() {
           <div className="order-summary">
             {cart.map((item, idx) => (
               <div className="order-item" key={idx}>
-                <span>{item.name} × {item.qty || 1}</span>
+                <span>
+                  {item.name} × {item.qty || 1}
+                </span>
                 <span>₹{item.price * (item.qty || 1)}</span>
               </div>
             ))}
 
             <hr />
-            <div className="order-total-row"><span>Subtotal</span><span>₹{total}</span></div>
-            <div className="order-total-row"><span>Shipping</span><span>₹{shipping}</span></div>
-            <div className="order-total-row total"><strong>Total</strong><strong>₹{grandTotal}</strong></div>
+            <div className="order-total-row">
+              <span>Subtotal</span>
+              <span>₹{total}</span>
+            </div>
+            <div className="order-total-row">
+              <span>Shipping</span>
+              <span>₹{shipping}</span>
+            </div>
+            <div className="order-total-row total">
+              <strong>Total</strong>
+              <strong>₹{grandTotal}</strong>
+            </div>
 
             <div className="terms order-terms">
-              <input type="checkbox" checked={agreeTerms} onChange={() => setAgreeTerms(!agreeTerms)} />
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={() => setAgreeTerms(!agreeTerms)}
+              />
               <label>I have read and agree to the website terms & conditions *</label>
             </div>
 
@@ -391,7 +576,9 @@ export default function Checkout() {
             </div>
 
             {loadingSave && (
-              <p style={{ color: "#ff6b81", marginTop: 8 }}>Processing order, please wait...</p>
+              <p style={{ color: "#ff6b81", marginTop: 8 }}>
+                Processing order, please wait...
+              </p>
             )}
           </div>
         </div>

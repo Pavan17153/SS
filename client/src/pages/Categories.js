@@ -16,6 +16,26 @@ const getPrimaryImage = (p) => {
   return "/placeholder.jpg";
 };
 
+// ==========================
+// DOM-Based Popup (works on mobile + desktop)
+// ==========================
+export const showPopup = (msg, type = "success") => {
+  const popup = document.createElement("div");
+  popup.className = `popup-toast ${type}`;
+  popup.innerText = msg;
+
+  document.body.appendChild(popup);
+
+  // Trigger animation
+  setTimeout(() => popup.classList.add("show"), 50);
+
+  // Hide after 3s
+  setTimeout(() => {
+    popup.classList.remove("show");
+    setTimeout(() => popup.remove(), 500);
+  }, 3000);
+};
+
 export default function CategoriesPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,8 +45,6 @@ export default function CategoriesPage() {
   const [searchText, setSearchText] = useState("");
   const [priceFilter, setPriceFilter] = useState(5000);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const [popupMsg, setPopupMsg] = useState("");
 
   // ⭐ MOBILE DROPDOWN STATE
   const [mobileDropdown, setMobileDropdown] = useState(false);
@@ -97,6 +115,7 @@ export default function CategoriesPage() {
         setProducts(arr);
       } catch (err) {
         console.error("Failed to load products:", err);
+        showPopup("Failed to load products", "error");
       }
     };
 
@@ -130,13 +149,13 @@ export default function CategoriesPage() {
     let cart = JSON.parse(localStorage.getItem(key) || "[]");
     const stockQty = Number(product.stockQty) || 0;
 
-    const existingIndex = cart.findIndex((c) => c.id === product.id);
+    const existingIndex = cart.findIndex((c) => c.productId === product.id);
 
     if (existingIndex !== -1) {
       const existingItem = cart[existingIndex];
 
       if ((existingItem.qty || 1) >= stockQty) {
-        showPopup(`Only ${stockQty} available`);
+        showPopup(`${product.name} has only ${stockQty} in stock`, "error");
         return;
       }
 
@@ -147,26 +166,19 @@ export default function CategoriesPage() {
       };
     } else {
       cart.push({
+        productId: product.id,
         id: product.id,
         name: product.name,
         price: product.price,
         qty: 1,
         image: getPrimaryImage(product),
-        stock: stockQty,
+        stock: product.stockQty || 0,
       });
     }
 
     localStorage.setItem(key, JSON.stringify(cart));
     emitCartUpdate();
-
-    showPopup(`${product.name} added to cart`);
-  };
-
-  const showPopup = (msg) => {
-    setPopupMsg(msg);
-    setTimeout(() => {
-      setPopupMsg("");
-    }, 1800);
+    showPopup(`${product.name} added to cart`, "success");
   };
 
   const categoryCount = (catId) =>
@@ -180,41 +192,52 @@ export default function CategoriesPage() {
         document.body.style.overflow = "auto";
       }
     };
-
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
 
   // LOCK BODY SCROLL WHEN OPEN
   useEffect(() => {
-    if (mobileDropdown) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
+    document.body.style.overflow = mobileDropdown ? "hidden" : "auto";
   }, [mobileDropdown]);
+
+  /* SCROLL ANIMATION WITH STAGGER */
+  useEffect(() => {
+    const cards = document.querySelectorAll(".product-card");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const idx = Number(entry.target.datasetIndex || 0);
+          const staggerBase = (idx % 6) * 80;
+          if (entry.isIntersecting) {
+            entry.target.style.transitionDelay = `${staggerBase}ms`;
+            entry.target.classList.add("fade-in-up");
+          } else {
+            entry.target.style.transitionDelay = `0ms`;
+            entry.target.classList.remove("fade-in-up");
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, [paginatedProducts]);
 
   return (
     <div className="categories-container">
-      {/* POPUP */}
-      {popupMsg && <div className="popup-toast">{popupMsg}</div>}
-
       {/* ⭐ MOBILE CATEGORY BUTTON (ONLY MOBILE) */}
       {isMobile && (
-        <div
-          className="mobile-category-btn"
-          onClick={() => setMobileDropdown(true)}
-        >
+        <div className="mobile-category-btn" onClick={() => setMobileDropdown(true)}>
           ☰ Categories
         </div>
       )}
 
-      {/* ⭐ MOBILE OVERLAY + SLIDE DOWN MENU (ONLY MOBILE) */}
+      {/* ⭐ MOBILE OVERLAY + SLIDE PANEL */}
       {isMobile && mobileDropdown && (
         <div className="mobile-overlay">
           <div className="mobile-category-panel">
             <h4 className="mobile-cat-title">All Categories</h4>
-
             {categories.map((cat) => (
               <div
                 key={cat.id}
@@ -239,8 +262,7 @@ export default function CategoriesPage() {
           {categories.map((cat) => (
             <li
               key={cat.id}
-              className={`category-item ${selectedCategory === cat.id ? "active" : ""
-                }`}
+              className={`category-item ${selectedCategory === cat.id ? "active" : ""}`}
               onClick={() => {
                 setSelectedCategory(cat.id);
                 setCurrentPage(1);
@@ -281,14 +303,12 @@ export default function CategoriesPage() {
           />
         </div>
 
-        <h4 className="product-title">
-          {selectedCategory.replace("-", " ").toUpperCase()}
-        </h4>
+        <h4 className="product-title">{selectedCategory.replace("-", " ").toUpperCase()}</h4>
 
         <div className="product-grid">
           {paginatedProducts.length > 0 ? (
-            paginatedProducts.map((p) => (
-              <div key={p.id} className="product-card">
+            paginatedProducts.map((p, i) => (
+              <div key={p.id} className="product-card" data-index={i}>
                 <img
                   src={getPrimaryImage(p)}
                   alt={p.name}
@@ -297,26 +317,21 @@ export default function CategoriesPage() {
                   onError={(e) => (e.target.src = "/placeholder.jpg")}
                 />
 
-                <h5
-                  className="product-name"
-                  onClick={() => navigate(`/product/${p.id}`)}
-                >
+                <h5 className="product-name" onClick={() => navigate(`/product/${p.id}`)}>
                   {p.name}
                 </h5>
 
                 <p className="product-price">₹{p.price}</p>
 
                 <p className={p.stockQty > 0 ? "in-stock" : "out-stock"}>
-                  {p.stockQty > 0
-                    ? `${p.stockQty} in stock`
-                    : "Out of Stock"}
+                  {p.stockQty > 0 ? `${p.stockQty} in stock` : "Out of Stock"}
                 </p>
 
-                <button
-                  className="add-btn"
-                  disabled={p.stockQty <= 0}
-                  onClick={() => addToCart(p)}
-                >
+                <button className="view-btn" onClick={() => navigate(`/product/${p.id}`)}>
+                  View Details
+                </button>
+
+                <button className="add-btn" disabled={p.stockQty <= 0} onClick={() => addToCart(p)}>
                   Add to Cart
                 </button>
               </div>
@@ -332,8 +347,7 @@ export default function CategoriesPage() {
             {Array.from({ length: totalPages }).map((_, i) => (
               <span
                 key={i}
-                className={`page-number ${currentPage === i + 1 ? "active-page" : ""
-                  }`}
+                className={`page-number ${currentPage === i + 1 ? "active-page" : ""}`}
                 onClick={() => changePage(i + 1)}
               >
                 {i + 1}
