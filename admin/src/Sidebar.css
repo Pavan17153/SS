@@ -1,75 +1,70 @@
-/* Sidebar container */
-.sidebar {
-  width: 240px;
-  height: 100vh;
-  background: #1e1e2d;
-  color: #ffffff;
+/* ========== PROFESSIONAL ADMIN NAVBAR (DESKTOP ONLY) ========== */
+
+.admin-navbar {
+  width: 100%;
+  background: #1a2533;
+  /* Professional dark blue-gray */
+  padding: 12px 25px;
   position: fixed;
-  left: 0;
   top: 0;
-  padding: 0;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+  left: 0;
+  z-index: 999;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
   font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
-/* Header */
-.sidebar-header {
-  padding: 20px;
-  background: #27293d;
-  text-align: center;
-  border-bottom: 1px solid #3a3b4f;
+/* Container for logo + menu */
+.admin-nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.sidebar-header h2 {
+/* Logo styling */
+.admin-logo {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   margin: 0;
-  font-size: 22px;
-  font-weight: 600;
 }
 
-/* Navigation */
-.sidebar-nav {
-  margin-top: 10px;
-}
-
-.sidebar-nav ul {
+/* Menu layout */
+.admin-nav-menu {
   list-style: none;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 25px;
   margin: 0;
+  padding: 0;
 }
 
-/* Each menu item */
-.sidebar-nav ul li {
-  margin: 10px 0;
+/* Divider line between groups */
+.divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.25);
 }
 
-.sidebar-nav ul li a {
-  display: block;
-  padding: 12px 20px;
-  font-size: 16px;
-  color: #d1d1e0;
+/* Links styling */
+.admin-nav-menu li a {
+  color: #cfd6e1;
   text-decoration: none;
-  border-left: 3px solid transparent;
-  transition: 0.3s ease;
+  font-size: 15px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.25s ease;
 }
 
 /* Hover effect */
-.sidebar-nav ul li a:hover {
-  background: #34354a;
-  border-left: 3px solid #5b7cfa;
+.admin-nav-menu li a:hover {
+  background: #2c3a4b;
   color: #ffffff;
 }
 
-/* Selected effect (optional for future use) */
-.sidebar-nav ul li a.active {
-  background: #34354a;
-  border-left: 3px solid #5b7cfa;
-}
-
-/* Content should not overlap */
+/* Push page content down */
 .content {
-  margin-left: 240px;
-  padding: 25px;
-  min-height: 100vh;
-  background: #f5f6fa;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  margin-top: 80px;
+  padding: 20px;
 }

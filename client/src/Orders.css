@@ -439,3 +439,72 @@
     padding: 18px;
   }
 }
+
+.order-note {
+  margin-top: 6px;
+  padding: 8px;
+  background: #fff8e6;
+  border-left: 4px solid #ffa500;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* --------------------------------------------- */
+/* MOBILE FILTER BUTTON + PANEL (NEW) */
+/* --------------------------------------------- */
+.mobile-filter-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-filter-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: #333;
+    color: white;
+    border: none;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+
+  .mobile-filter-panel {
+    background: white;
+    padding: 15px;
+    border-bottom: 1px solid #ccc;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .mobile-filter-select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-top: 5px;
+    background: #fafafa;
+  }
+
+  .mobile-theme-btn {
+    width: 100%;
+    background: #222;
+    padding: 10px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+}

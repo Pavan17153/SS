@@ -135,7 +135,13 @@ export default function AdminOrders() {
   const totalOrders = orders.length;
   const shipped = orders.filter((o) => o.status === "shipped").length;
   const delivered = orders.filter((o) => o.status === "delivered").length;
-  const unshipped = totalOrders - shipped - delivered;
+  const Cancelled = orders.filter((o) => o.status === "Cancelled").length;
+  const unshipped = orders.filter((o) =>
+    o.status !== "shipped" &&
+    o.status !== "delivered" &&
+    o.status !== "Cancelled"
+  ).length;
+
 
   // Filtering
   const filteredOrders = useMemo(() => {
@@ -242,8 +248,8 @@ export default function AdminOrders() {
         <body>
           <h1>Shipped Orders (${shippedOrders.length})</h1>
           ${shippedOrders.map(o => {
-            const created = new Date(toMillis(o.createdAt)).toLocaleString();
-            return `
+      const created = new Date(toMillis(o.createdAt)).toLocaleString();
+      return `
               <section style="margin-bottom:22px;">
                 <h2 style="margin:0 0 8px 0;">Order: ${o.id} — ₹${o.totalPrice || 0}</h2>
                 <div>Customer: ${o.customerEmail || ""} | Phone: ${o.customerPhone || ""} | Created: ${created}</div>
@@ -263,7 +269,7 @@ export default function AdminOrders() {
                 </table>
               </section>
             `;
-          }).join("")}
+    }).join("")}
         </body>
       </html>
     `;
@@ -347,34 +353,35 @@ export default function AdminOrders() {
         <div className="stat-card green"><h3>{shipped}</h3><p>Shipped</p></div>
         <div className="stat-card orange"><h3>{unshipped}</h3><p>Unshipped</p></div>
         <div className="stat-card blue"><h3>{delivered}</h3><p>Delivered</p></div>
-        <div className="stat-card purple"><h3>{productsCount}</h3><p>Total Products</p></div>
+        <div className="stat-card red"><h3>{Cancelled}</h3><p>Cancelled</p></div>
+
       </div>
 
       {/* Orders table */}
       <table className="orders-table">
         <thead>
           <tr>
-            <th style={{width:'12%'}}>Order ID</th>
-            <th style={{width:'18%'}}>Customer Email</th>
-            <th style={{width:'10%'}}>Phone</th>
-            <th style={{width:'8%'}}>Shipped</th>
-            <th style={{width:'8%'}}>Delivered</th>
-            <th style={{width:'8%'}}>status</th>
-            <th style={{width:'8%'}}>Total</th>
-            <th style={{width:'14%'}}>Created At</th>
-            <th style={{width:'20%'}}>Items (category)</th>
-            <th style={{width:'4%'}}>View</th>
-            <th style={{width:'4%'}}>Delete</th>
+            <th style={{ width: '12%' }}>Order ID</th>
+            <th style={{ width: '18%' }}>Customer Email</th>
+            <th style={{ width: '10%' }}>Phone</th>
+            <th style={{ width: '8%' }}>Shipped</th>
+            <th style={{ width: '8%' }}>Delivered</th>
+            <th style={{ width: '8%' }}>status</th>
+            <th style={{ width: '8%' }}>Total</th>
+            <th style={{ width: '14%' }}>Created At</th>
+            <th style={{ width: '20%' }}>Items (category)</th>
+            <th style={{ width: '4%' }}>View</th>
+            <th style={{ width: '4%' }}>Delete</th>
           </tr>
         </thead>
         <tbody>
           {filteredOrders.map((o) => (
             <tr key={o.id} className={
               o.status === "Cancelled" ? "cancelled-row" :
-              o.status === "shipped" ? "shipped-row" :
-              o.status === "delivered" ? "delivered-row" : ""
+                o.status === "shipped" ? "shipped-row" :
+                  o.status === "delivered" ? "delivered-row" : ""
             }>
-              <td style={{wordBreak:'break-all'}}>{o.id}</td>
+              <td style={{ wordBreak: 'break-all' }}>{o.id}</td>
               <td>{o.customerEmail}</td>
               <td>{o.customerPhone}</td>
 
@@ -419,7 +426,7 @@ export default function AdminOrders() {
                       </div>
                     </div>
                   ))}
-                  {(o.items || []).length > 5 && <div style={{fontSize:12}}>+{(o.items||[]).length-5} more</div>}
+                  {(o.items || []).length > 5 && <div style={{ fontSize: 12 }}>+{(o.items || []).length - 5} more</div>}
                 </div>
               </td>
 
@@ -441,7 +448,10 @@ export default function AdminOrders() {
                 <h2>Order Details</h2>
                 <p><strong>Order ID:</strong> {selectedOrder.id}</p>
                 <p><strong>Payment ID:</strong> {selectedOrder.paymentId || "Not Available"}</p>
-
+                <p>
+                  <span className="label">Order Note:</span>
+                  {selectedOrder?.billingDetails?.orderNotes || "No order note"}
+                </p>
                 <h3>Items</h3>
                 <ul>
                   {selectedOrder.items?.map((it, i) => (
@@ -485,7 +495,7 @@ export default function AdminOrders() {
             ) : (
               <>
                 <h2>Edit Billing Details</h2>
-                {["firstName","lastName","address1","address2","city","state","pin","phone","email"].map((f) => (
+                {["firstName", "lastName", "address1", "address2", "city", "state", "pin", "phone", "email"].map((f) => (
                   <React.Fragment key={f}>
                     <label>{f.charAt(0).toUpperCase() + f.slice(1)}</label>
                     <input value={editData.billingDetails?.[f] || ""} onChange={(e) => setEditData({ ...editData, billingDetails: { ...editData.billingDetails, [f]: e.target.value } })} />

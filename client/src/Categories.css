@@ -24,7 +24,7 @@
 }
 
 .sidebar-title {
-  color: #f0edee;
+  color: #e63e76;
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 12px;
@@ -117,8 +117,9 @@
    ================================ */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+
 }
 
 /* PRODUCT CARD */
@@ -289,14 +290,18 @@
 }
 
 .popup-toast.success {
-  color: #e6e0e0;
-  background: linear-gradient(135deg, #ff4c7d, #ffb3c9);
+  color: rgb(90, 28, 28);
+  background: linear-gradient(to right, #ffe3ec, #ffffff);
+  padding: 12px 24px;
+  border-left: 5px solid #ff4c7d;
 
 }
 
 .popup-toast.error {
-  color: #930202;
-  background: linear-gradient(135deg, #ff4c7d, #ffb3c9);
+  color: rgb(90, 28, 28);
+  background: linear-gradient(to right, #ffe3ec, #ffffff);
+  padding: 12px 24px;
+  border-left: 5px solid #ff4c7d;
 }
 
 @media (max-width: 768px) {
@@ -400,7 +405,7 @@
   }
 
   .product-card {
-    padding: 8px;
+    padding: 5px;
   }
 
   .product-img {
@@ -453,5 +458,95 @@
 
   to {
     opacity: 1;
+  }
+}
+
+.product-price {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff3f6c;
+  margin-bottom: 4px;
+}
+
+.original-price {
+  font-size: 14px;
+  color: #888;
+  text-decoration: line-through;
+  margin-left: 6px;
+}
+
+/* ///////////////////////////////////////////////////////////////jjj///////////// */
+/* Reduce gap between image → name → price */
+.product-card {
+  padding: 8px;
+  /* reduces card padding */
+}
+
+.product-img {
+  margin-bottom: 6px;
+  /* reduce gap below image */
+}
+
+.product-name {
+  margin: 4px 0 2px;
+  /* reduce gap above and below name */
+}
+
+.product-price {
+  margin: 2px 0;
+  /* small gap below price */
+}
+
+/* ULTRA COMPACT PRODUCT CARD */
+.product-card {
+  padding: 4px !important;
+  border-radius: 8px;
+}
+
+/* Smaller product image */
+.product-img {
+  height: 170px !important;
+  /* ultra small */
+  margin-bottom: 4px;
+  border-radius: 8px;
+}
+
+/* Compact text spacing */
+.product-name {
+  font-size: 13px;
+  margin: 2px 0 2px;
+  line-height: 1.2;
+}
+
+.product-price {
+  font-size: 15px;
+  margin: 2px 0;
+}
+
+.original-price {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+/* Buttons compact */
+.view-btn,
+.add-btn {
+  margin-top: 4px;
+  padding: 6px !important;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+@media (max-width: 768px) {
+  .product-img {
+    height: 150px !important;
+  }
+
+  .product-name {
+    font-size: 12px;
+  }
+
+  .product-price {
+    font-size: 14px;
   }
 }

@@ -24,6 +24,9 @@ export default function Orders() {
   const [cancelPopup, setCancelPopup] = useState({ show: false, orderId: null });
   const [successPopup, setSuccessPopup] = useState(false);
 
+  // ✅ ADDED — mobile filter toggle
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setUserEmail(user ? user.email : null);
@@ -124,7 +127,7 @@ export default function Orders() {
         </div>
       )}
 
-      {/* AMAZON-STYLE TOP SLIDE CANCEL POPUP */}
+      {/* CANCEL POPUP */}
       {cancelPopup.show && (
         <div className="cancel-top-overlay">
           <div className="cancel-top-popup">
@@ -152,6 +155,8 @@ export default function Orders() {
       )}
 
       <div className={darkMode ? "orders-wrapper dark" : "orders-wrapper"}>
+
+        {/* SIDEBAR (Desktop) */}
         <aside className="orders-sidebar">
           <h3>Filters</h3>
 
@@ -173,12 +178,51 @@ export default function Orders() {
           </button>
         </aside>
 
+        {/* ✅ ADDED — MOBILE FILTER BUTTON */}
+        <button
+          className="mobile-filter-btn"
+          onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+        >
+          {mobileFilterOpen ? "Close Filters ▲" : "Filters ▼"}
+        </button>
+
+        {/* ✅ ADDED — MOBILE FILTER PANEL */}
+        {mobileFilterOpen && (
+          <div className="mobile-filter-panel">
+            <label>Status:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="mobile-filter-select"
+            >
+              <option>All</option>
+              <option>Pending</option>
+              <option>Processing</option>
+              <option>Unshipped</option>
+              <option>Shipped</option>
+              <option>Delivered</option>
+              <option>Cancelled</option>
+            </select>
+
+            <p className="mobile-filter-count">Results: {filteredOrders.length}</p>
+
+            <button
+              className="mobile-theme-btn"
+              onClick={() => setDarkMode(!darkMode)}
+            >
+              {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
+            </button>
+          </div>
+        )}
+
+        {/* MAIN CONTENT */}
         <div className="orders-container">
           <h2 className="orders-heading">Your Orders</h2>
 
           {filteredOrders.map((order) => (
             <div key={order.id} className="order-card animate-card">
 
+              {/* TOP */}
               <div className="order-top">
                 <div>
                   <p><strong>Order ID:</strong> {order.id}</p>
@@ -197,6 +241,11 @@ export default function Orders() {
                       Phone: {order.billingDetails.phone}
                     </p>
                   )}
+                  {order.Note && (
+                    <p className="order-note">
+                      <strong>Order Note:</strong> {order.Note}
+                    </p>
+                  )}
                 </div>
 
                 <div className="order-date">
@@ -204,6 +253,7 @@ export default function Orders() {
                 </div>
               </div>
 
+              {/* ITEMS */}
               <div className="order-items">
                 <strong>Items:</strong>
                 {(order.items || []).map((item, i) => (
@@ -225,6 +275,7 @@ export default function Orders() {
                 <strong>Payment ID:</strong> {order.paymentId || "Pending"}
               </div>
 
+              {/* CANCEL BUTTON */}
               {["Pending", "Processing", "Unshipped"].includes(order.status) ? (
                 <button className="order-cancel-btn" onClick={() => askCancelOrder(order.id)}>
                   Cancel Order
@@ -235,8 +286,11 @@ export default function Orders() {
                 </button>
               )}
 
+              {/* TRACKING */}
               {order.status === "Cancelled" ? (
-                <p className="cancel-msg">Order was Cancelled</p>
+                <p className="cancel-msg">Your order has been successfully cancelled.
+                  The refund will be processed to your original payment method within 2-3 working days.</p>
+
               ) : (
                 <div className="track-box">
                   <h4>Track Status</h4>

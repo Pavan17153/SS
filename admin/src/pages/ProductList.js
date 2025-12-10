@@ -1,4 +1,5 @@
 // admin/src/pages/ProductsAdminPage.js
+
 import React, { useEffect, useState } from "react";
 import { db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../firebase";
 import {
@@ -211,19 +212,32 @@ export default function ProductsAdminPage() {
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState([]);
 
+  const [totalOrders, setTotalOrders] = useState(0);
+
+  /* Fetch products + orders */
   const fetchAll = async () => {
     setLoading(true);
+
     try {
+      // PRODUCTS
       const col = collection(db, "products");
       const q = query(col, orderBy("createdAt", "desc"));
       const snap = await getDocs(q);
       const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
       setProducts(arr);
       setRecent(arr.slice(0, 12));
+
+      // ORDERS
+      const orderCol = collection(db, "orders");
+      const orderSnap = await getDocs(orderCol);
+      setTotalOrders(orderSnap.size);
+
     } catch (err) {
       console.error(err);
-      alert("Failed to load products: " + err.message);
+      alert("Failed to load products/orders: " + err.message);
     }
+
     setLoading(false);
   };
 
@@ -272,6 +286,14 @@ export default function ProductsAdminPage() {
     setLoading(false);
   };
 
+  /* ---------- Calculations ---------- */
+  const totalAvailable = products.reduce(
+    (sum, p) => sum + (Number(p.stockQty) || 0),
+    0
+  );
+
+  const stockCompleted = totalOrders; // Option A
+
   const visibleProducts = filter === "all" ? products : products.filter(p => p.category === filter);
 
   return (
@@ -291,6 +313,25 @@ export default function ProductsAdminPage() {
       </aside>
 
       <main className="admin-main">
+
+        {/* ---------- STATS ROW ---------- */}
+        <div className="stats-row">
+          <div className="stat-card">
+            <h3>{products.length}</h3>
+            <p>Total Products</p>
+          </div>
+
+          <div className="stat-card green">
+            <h3>{totalAvailable}</h3>
+            <p>Stocks Available</p>
+          </div>
+
+          <div className="stat-card blue">
+            <h3>{stockCompleted}</h3>
+            <p>Stocks Completed</p>
+          </div>
+        </div>
+
         <header className="admin-top">
           <h2>{filter === "all" ? "All Products" : filter.replace("-", " ").toUpperCase()}</h2>
           <div className="top-controls">
@@ -359,6 +400,7 @@ export default function ProductsAdminPage() {
       </main>
 
       {editing && <EditModal product={editing} onClose={closeEdit} onSaved={refresh} />}
+
     </div>
   );
 }

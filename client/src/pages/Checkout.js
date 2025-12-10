@@ -324,12 +324,16 @@ export default function Checkout() {
       category: item.category || "",
       subCategory: item.subCategory || "",
       productId: item.productId || "",
+      orderNotes: item.orderNotes || "",
     }));
 
     await addDoc(collection(db, "orders"), {
       customerEmail: orderEmail,
       customerPhone: form.phone,
+
       billingDetails: { ...form },
+
+      Note: form.orderNotes,
       items: itemsForDb,
       totalPrice: grandTotal,
       paymentId,
