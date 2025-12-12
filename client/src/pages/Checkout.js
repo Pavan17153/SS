@@ -1,4 +1,4 @@
-﻿// src/pages/Checkout.js
+﻿// src/pages/Checkout.js 
 import React, { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
 import {
@@ -15,6 +15,11 @@ import {
   doc,
   updateDoc,
   getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  runTransaction,
 } from "firebase/firestore";
 import RazorpayPayment from "./RazorpayPayment";
 import EmailExistPopup from "./EmailExistPopup";
@@ -34,7 +39,7 @@ function generateRandomPassword(length = 12) {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
   let pw = "";
   for (let i = 0; i < length; i++)
-    pw += chars.charAt(Math.floor(Math.random() * chars.length));
+    pw += chars.charAt(Math.floor(Math.random() * Math.random() * chars.length));
   return pw;
 }
 
@@ -48,6 +53,19 @@ export default function Checkout() {
   };
 
   const [cart, setCart] = useState(loadCorrectCart());
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // ✅ new state
+
+  useEffect(() => {
+    // load persisted applied coupon from localStorage (set by FetchCoupons)
+    try {
+      const storedCoupon = localStorage.getItem("ssf_appliedCoupon");
+      if (storedCoupon) setAppliedCoupon(JSON.parse(storedCoupon));
+      // also allow window.appliedCouponObj fallback
+      else if (window.appliedCouponObj) setAppliedCoupon(window.appliedCouponObj);
+    } catch (e) {
+      console.warn("Could not read applied coupon from localStorage", e);
+    }
+  }, []);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, () => {
@@ -94,7 +112,8 @@ export default function Checkout() {
     else shipping = 240;
   }
 
-  const grandTotal = total + shipping;
+  const discount = appliedCoupon ? appliedCoupon.amount : 0; // ✅ apply coupon
+  const grandTotal = Math.max(total + shipping - discount, 0); // ✅ total after discount
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -202,6 +221,7 @@ export default function Checkout() {
 
       const randomPw = generateRandomPassword(12);
       try {
+        // createUserWithEmailAndPassword signs-in the user on success
         await createUserWithEmailAndPassword(auth, email, randomPw);
         setAccountCreatedEmail(email);
       } catch {
@@ -230,12 +250,27 @@ export default function Checkout() {
     }
   };
 
-  //NEW FUNCTION — Reduce stock after successful payment
+  // Wait for auth.currentUser for up to `timeout` milliseconds
+  const waitForAuth = (timeout = 5000) =>
+    new Promise((resolve) => {
+      if (auth.currentUser) return resolve(auth.currentUser);
+      let waited = 0;
+      const iv = setInterval(() => {
+        if (auth.currentUser) {
+          clearInterval(iv);
+          return resolve(auth.currentUser);
+        }
+        waited += 200;
+        if (waited >= timeout) {
+          clearInterval(iv);
+          return resolve(null);
+        }
+      }, 200);
+    });
+
   // Reduce stock in Firestore after successful payment
   const reduceStockInFirestore = async () => {
     for (const item of cart) {
-
-      // IMPORTANT: fallback id support
       const pid = item.productId || item.id;
       if (!pid) continue;
 
@@ -247,14 +282,12 @@ export default function Checkout() {
       const reduceBy = item.qty || 0;
       const newStock = Math.max(currentStock - reduceBy, 0);
 
+      // update stockQty only (rules allow update of only stockQty)
       await updateDoc(productRef, {
         stockQty: newStock,
       });
     }
   };
-
-
-
 
   useEffect(() => {
     const handler = async (e) => {
@@ -265,21 +298,73 @@ export default function Checkout() {
 
       try {
         const orderEmail = form.email.trim().toLowerCase();
-        const currentUser = auth.currentUser;
+
+        // Wait short time for auth to stabilize (important after newly-created users)
+        const currentUser = await waitForAuth(5000);
 
         if (!currentUser || currentUser.email.toLowerCase() !== orderEmail) {
           setInfoMessage({
             type: "error",
-            text: "Session expired. Please login again.",
+            text:
+              "Session expired or not signed in. Please refresh, login and try again.",
           });
           setLoadingSave(false);
           return;
         }
 
         // ⭐⭐⭐ REDUCE STOCK BEFORE SAVING ORDER ⭐⭐⭐
-        await reduceStockInFirestore();
+        try {
+          await reduceStockInFirestore();
+        } catch (err) {
+          console.error("reduceStockInFirestore error:", err);
+          // If permission denied for product updates, surface a helpful message
+          if (err?.code === "permission-denied") {
+            setInfoMessage({
+              type: "error",
+              text:
+                "Unable to update product stock due to permissions. Contact admin.",
+            });
+            setLoadingSave(false);
+            return;
+          }
+          throw err;
+        }
 
-        await saveOrderToFirestore(orderEmail, paymentId);
+        // Save order (returns orderId)
+        let orderId;
+        try {
+          orderId = await saveOrderToFirestore(orderEmail, paymentId);
+        } catch (err) {
+          console.error("saveOrderToFirestore error:", err);
+          if (err?.code === "permission-denied") {
+            setInfoMessage({
+              type: "error",
+              text:
+                "Unable to save order due to permissions. Contact admin.",
+            });
+            setLoadingSave(false);
+            return;
+          }
+          throw err;
+        }
+
+        // Save coupon usage (if any)
+        try {
+          await saveCouponUsedData(orderId, paymentId);
+        } catch (err) {
+          console.error("saveCouponUsedData error:", err);
+          if (err?.code === "permission-denied") {
+            setInfoMessage({
+              type: "error",
+              text:
+                "Could not log coupon usage due to permissions. Contact admin.",
+            });
+            // proceed — coupon logging failing shouldn't block order success UI
+          } else {
+            // non-permission errors also shouldn't block final flow, log & continue
+            console.warn("coupon logging failed:", err);
+          }
+        }
 
         const email = auth.currentUser?.email;
         if (email) {
@@ -288,6 +373,8 @@ export default function Checkout() {
           localStorage.removeItem("ssf_cart");
         }
         setCart([]);
+        localStorage.removeItem("ssf_appliedCoupon"); // remove applied coupon
+        setAppliedCoupon(null);
 
         if (accountCreatedEmail) {
           setInfoMessage({
@@ -305,7 +392,13 @@ export default function Checkout() {
         }
       } catch (err) {
         console.error("Stock/Order Error:", err);
-        setInfoMessage({ type: "error", text: "Could not save order." });
+        // show friendly message for unknown failures
+        setInfoMessage({
+          type: "error",
+          text:
+            err?.message ||
+            "Could not save order due to an unexpected error. Check console.",
+        });
       } finally {
         setLoadingSave(false);
       }
@@ -313,9 +406,90 @@ export default function Checkout() {
 
     window.addEventListener("payment_success", handler);
     return () => window.removeEventListener("payment_success", handler);
-  }, [form, cart, accountCreatedEmail]);
+  }, [form, cart, accountCreatedEmail, appliedCoupon]);
+
+  // ============================
+  // saveCouponUsedData (atomic, prevents double-use & race)
+  // ============================
+  const saveCouponUsedData = async (orderId, paymentId) => {
+    if (!appliedCoupon) return; // coupon not applied, skip
+
+    // guard: ensure auth present before write (security rules require auth)
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated for coupon logging.");
+    }
+
+    const couponRef = doc(db, "coupons", appliedCoupon.id);
+    // use deterministic per-user couponUsed doc id to avoid duplicates
+    const couponUsedId = `${appliedCoupon.id}_${currentUser.uid}`;
+    const couponUsedRef = doc(db, "couponUsed", couponUsedId);
+
+    // transaction: ensure coupon is active, user hasn't already used, update usedCount atomically
+    try {
+      await runTransaction(db, async (tx) => {
+        const cSnap = await tx.get(couponRef);
+        if (!cSnap.exists()) {
+          throw new Error("Coupon no longer exists.");
+        }
+        const cData = cSnap.data();
+        const maxUsers = cData.maxUsers ?? null;
+        const usedCount = cData.usedCount || 0;
+        const isActive = cData.active !== false;
+
+        if (!isActive) {
+          throw new Error("Coupon is not active.");
+        }
+        if (maxUsers !== null && usedCount >= maxUsers) {
+          // deactivate if reached (best-effort)
+          tx.update(couponRef, { active: false });
+          throw new Error("Coupon usage limit reached.");
+        }
+
+        // check if user already used this coupon (by reading couponUsedRef)
+        const usedSnap = await tx.get(couponUsedRef);
+        if (usedSnap.exists()) {
+          throw new Error("You have already used this coupon.");
+        }
+
+        const itemNames = cart.map(i => `${i.name} x ${i.qty || 1}`).join(", ");
+
+        // create couponUsed doc with deterministic id (so repeated attempts fail)
+        tx.set(couponUsedRef, {
+          orderId,
+          paymentId,
+          totalAmount: grandTotal,
+          item: itemNames,
+          couponName: appliedCoupon.name,
+          couponId: appliedCoupon.id,
+          discount: appliedCoupon.amount,
+          createdAt: Timestamp.now(),
+          usedBy: currentUser.email,
+          uid: currentUser.uid,
+        });
+
+        // increment usedCount and deactivate if reached
+        const newUsed = usedCount + 1;
+        const updates = { usedCount: newUsed };
+        if (maxUsers !== null && newUsed >= maxUsers) updates.active = false;
+        tx.update(couponRef, updates);
+      });
+    } catch (err) {
+      // bubble up for caller to handle friendly messages
+      throw err;
+    }
+  };
 
   const saveOrderToFirestore = async (orderEmail, paymentId) => {
+    // guard: ensure auth present before write (rules require authenticated user)
+    const currentUser = auth.currentUser;
+    if (!currentUser || currentUser.email.toLowerCase() !== orderEmail) {
+      // throw a clear error so caller shows helpful message
+      const e = new Error("Not authenticated as the order email user.");
+      e.code = "not-authenticated";
+      throw e;
+    }
+
     const itemsForDb = cart.map((item) => ({
       name: item.name,
       price: item.price,
@@ -327,19 +501,20 @@ export default function Checkout() {
       orderNotes: item.orderNotes || "",
     }));
 
-    await addDoc(collection(db, "orders"), {
+    const ref = await addDoc(collection(db, "orders"), {
       customerEmail: orderEmail,
       customerPhone: form.phone,
-
       billingDetails: { ...form },
-
       Note: form.orderNotes,
       items: itemsForDb,
-      totalPrice: grandTotal,
+      totalPrice: grandTotal, // ✅ discounted total
+      couponApplied: appliedCoupon || null, // ✅ save coupon info
       paymentId,
-      status: "paid",
+      status: "pending",
       createdAt: Timestamp.now(),
+      createdBy: currentUser.email,
     });
+    return ref.id;
   };
 
   const openLoginFromExistPopup = (email) => {
@@ -348,14 +523,103 @@ export default function Checkout() {
     setTimeout(() => setLoginPopupVisible(true), 80);
   };
 
-  const handleLoginSuccess = () => {
+  // make this async so we can re-validate coupon immediately after login
+  const handleLoginSuccess = async () => {
     setLoginPopupVisible(false);
     setCart(loadCorrectCart());
     setInfoMessage({
       type: "success",
       text: "Logged in. Click Pay Now again.",
     });
+
+    // re-validate coupon for the newly-logged-in user so coupon can't be reused
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+        await validateCouponForCurrentUser(currentUser);
+      } catch (err) {
+        // validator already sets friendly messages; just log
+        console.warn("Coupon validation after login failed:", err);
+      }
+    }
   };
+
+  // ==========================
+  // NEW: validateCouponForCurrentUser
+  // Ensures coupon applied in localStorage/cart is still valid for the logged in user.
+  // If invalid (already used, deactivated, or maxUsers reached), remove it and notify user.
+  // ==========================
+  const validateCouponForCurrentUser = async (currentUser) => {
+    if (!appliedCoupon) return;
+    if (!currentUser) return;
+
+    try {
+      const couponRef = doc(db, "coupons", appliedCoupon.id);
+      const couponUsedId = `${appliedCoupon.id}_${currentUser.uid}`;
+      const couponUsedRef = doc(db, "couponUsed", couponUsedId);
+
+      const [cSnap, usedSnap] = await Promise.all([
+        getDoc(couponRef),
+        getDoc(couponUsedRef),
+      ]);
+
+      // If user already used the coupon -> remove it
+      if (usedSnap.exists()) {
+        localStorage.removeItem("ssf_appliedCoupon");
+        setAppliedCoupon(null);
+        setInfoMessage({
+          type: "error",
+          text:
+            "The coupon you had applied was already used by this account, so it has been removed.",
+        });
+        return;
+      }
+
+      // If coupon doc doesn't exist or is inactive or usage limit reached -> remove it
+      if (!cSnap.exists()) {
+        localStorage.removeItem("ssf_appliedCoupon");
+        setAppliedCoupon(null);
+        setInfoMessage({
+          type: "error",
+          text: "The coupon you had applied is no longer valid and has been removed.",
+        });
+        return;
+      }
+
+      const cData = cSnap.data();
+      const isActive = cData.active !== false;
+      const maxUsers = cData.maxUsers ?? null;
+      const usedCount = cData.usedCount || 0;
+
+      if (!isActive || (maxUsers !== null && usedCount >= maxUsers)) {
+        localStorage.removeItem("ssf_appliedCoupon");
+        setAppliedCoupon(null);
+        setInfoMessage({
+          type: "error",
+          text:
+            "The coupon you had applied is no longer available and has been removed.",
+        });
+        return;
+      }
+
+      // otherwise coupon still valid for this user — do nothing
+    } catch (err) {
+      console.error("validateCouponForCurrentUser error:", err);
+      // don't block the user — if validation fails due to network etc. we leave coupon as-is.
+      // but inform admin-friendly message optionally:
+      // setInfoMessage({ type: 'error', text: 'Could not validate coupon at login — please try again.' })
+    }
+  };
+
+  // When user logs-in or appliedCoupon changes, re-validate coupon for the current user
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!appliedCoupon || !currentUser) return;
+    // fire-and-forget validation
+    validateCouponForCurrentUser(currentUser).catch((err) =>
+      console.warn("Coupon validation error:", err)
+    );
+  }, [appliedCoupon, userEmail]);
 
   return (
     <>
@@ -542,6 +806,12 @@ export default function Checkout() {
               <span>Shipping</span>
               <span>₹{shipping}</span>
             </div>
+            {appliedCoupon && (
+              <div className="order-total-row">
+                <span>Coupon ({appliedCoupon.name})</span>
+                <span>-₹{appliedCoupon.amount}</span>
+              </div>
+            )}
             <div className="order-total-row total">
               <strong>Total</strong>
               <strong>₹{grandTotal}</strong>

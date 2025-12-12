@@ -50,6 +50,9 @@ export default function CategoriesPage() {
   const [mobileDropdown, setMobileDropdown] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
+  // ⭐ SORT STATE
+  const [sortBy, setSortBy] = useState("default"); // default, in-stock, out-stock, low-high, high-low
+
   const ITEMS_PER_PAGE = 20;
 
   const categories = [
@@ -122,15 +125,23 @@ export default function CategoriesPage() {
     fetchProducts();
   }, []);
 
-  // FILTERED PRODUCTS
+  // FILTERED PRODUCTS WITH SORT
   const filteredProducts = useMemo(() => {
-    return products
+    let arr = products
       .filter((p) => p.category === selectedCategory)
       .filter((p) =>
         (p.name || "").toLowerCase().includes(searchText.toLowerCase())
       )
       .filter((p) => Number(p.price) <= priceFilter);
-  }, [products, selectedCategory, searchText, priceFilter]);
+
+    // APPLY SORT
+    if (sortBy === "in-stock") arr = arr.filter((p) => p.stockQty > 0);
+    else if (sortBy === "out-stock") arr = arr.filter((p) => p.stockQty <= 0);
+    else if (sortBy === "low-high") arr = arr.sort((a, b) => a.price - b.price);
+    else if (sortBy === "high-low") arr = arr.sort((a, b) => b.price - a.price);
+
+    return arr;
+  }, [products, selectedCategory, searchText, priceFilter, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice(
@@ -226,10 +237,24 @@ export default function CategoriesPage() {
 
   return (
     <div className="categories-container">
-      {/* ⭐ MOBILE CATEGORY BUTTON (ONLY MOBILE) */}
+      {/* ⭐ MOBILE TOP ROW: CATEGORY + SORT */}
       {isMobile && (
-        <div className="mobile-category-btn" onClick={() => setMobileDropdown(true)}>
-          ☰ Categories
+        <div className="mobile-top-row">
+          <div className="mobile-category-btn" onClick={() => setMobileDropdown(true)}>
+            ☰ Categories
+          </div>
+
+          <select
+            className="mobile-sort-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="default">Sort By</option>
+            <option value="in-stock">In Stock</option>
+            <option value="out-stock">Out of Stock</option>
+            <option value="low-high">Price: Low → High</option>
+            <option value="high-low">Price: High → Low</option>
+          </select>
         </div>
       )}
 
@@ -255,7 +280,7 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* DESKTOP SIDEBAR */}
+      {/* DESKTOP SIDEBAR + SORT */}
       <div className="category-sidebar">
         <h5 className="sidebar-title">Categories</h5>
         <ul className="category-list">
@@ -273,6 +298,19 @@ export default function CategoriesPage() {
             </li>
           ))}
         </ul>
+
+        {/* Desktop Sort */}
+        <select
+          className="desktop-sort-select"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="default">Sort By</option>
+          <option value="in-stock">In Stock</option>
+          <option value="out-stock">Out of Stock</option>
+          <option value="low-high">Price: Low → High</option>
+          <option value="high-low">Price: High → Low</option>
+        </select>
       </div>
 
       {/* PRODUCTS SECTION */}
@@ -321,7 +359,10 @@ export default function CategoriesPage() {
                   {p.name}
                 </h5>
 
-                <p className="product-price">₹{p.price}</p>
+                <div className="price-row">
+                  <span className="original-price">₹{p.original}</span>
+                  <span className="final-price">₹{p.price}</span>
+                </div>
 
                 <p className={p.stockQty > 0 ? "in-stock" : "out-stock"}>
                   {p.stockQty > 0 ? `${p.stockQty} in stock` : "Out of Stock"}

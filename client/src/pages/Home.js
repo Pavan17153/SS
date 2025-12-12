@@ -125,6 +125,27 @@ const Home = () => {
               Shop Now
             </button>
           </div>
+          <div className="features-container">
+            <div className="feature-box">
+              <h3>Awesome Collections</h3>
+              <p>Hand picked great collection.</p>
+            </div>
+
+            <div className="feature-box">
+              <h3>Best Quality</h3>
+              <p>You get the best quality you deserve.</p>
+            </div>
+
+            <div className="feature-box">
+              <h3>Best Offers</h3>
+              <p>Great designs at low price.</p>
+            </div>
+
+            <div className="feature-box">
+              <h3>Secure Payments</h3>
+              <p>Your payments are secured by Razorpay.</p>
+            </div>
+          </div>
         </>
       )}
     </div>

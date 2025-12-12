@@ -30,6 +30,9 @@ import Faq from "./pages/Faq";
 import ProductAdmin from "./pages/Products";
 import ProductList from "./pages/ProductList";
 
+// ⭐ NEW — Coupons Page
+import Coupons from "./pages/Coupons";
+
 // ------------------ Layout ------------------
 function Layout({ children }) {
   const location = useLocation();
@@ -114,6 +117,12 @@ export default function App() {
           <Route
             path="/faq"
             element={<ProtectedRoute user={user} element={<Faq />} />}
+          />
+
+          {/* ⭐ Coupons Route */}
+          <Route
+            path="/coupons"
+            element={<ProtectedRoute user={user} element={<Coupons />} />}
           />
 
           {/* Product Routes */}

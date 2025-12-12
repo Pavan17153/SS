@@ -15,7 +15,7 @@ const Sidebar = () => {
           <li><Link to="/product-list">📦 All Products</Link></li>
           <li><Link to="/orders">🧾 Orders</Link></li>
           <li><Link to="/payments">💳 Payments</Link></li>
-
+          <li><Link to="/coupons">🏷️ Coupons</Link></li>
           <li className="divider"></li>
 
           <li><Link to="/contact">✉️ Contact</Link></li>

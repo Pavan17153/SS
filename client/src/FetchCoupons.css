@@ -1,0 +1,50 @@
+.fetch-coupons-container {
+    background: #fff;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    max-width: 400px;
+    margin: 15px auto;
+    font-family: "Poppins", sans-serif;
+}
+
+.fetch-coupons-container h3 {
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.coupon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.coupon-item {
+    padding: 12px;
+    border: 1px solid #d8d8d8;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.coupon-item:hover {
+    background: #f5f0ff;
+    border-color: #8a2be2;
+}
+
+.coupon-item.selected {
+    background: #8a2be2;
+    color: #fff;
+    border-color: #8a2be2;
+}
+
+.coupon-applied {
+    margin-top: 12px;
+    padding: 10px;
+    background: #e7f5ff;
+    border-radius: 8px;
+    color: #055160;
+    font-weight: 500;
+}

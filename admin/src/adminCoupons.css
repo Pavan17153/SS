@@ -1,0 +1,241 @@
+/* =========================
+   GLOBAL STYLES
+   ========================= */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f6fa;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.coupon-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+/* =========================
+   HEADING
+   ========================= */
+.heading {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* =========================
+   STATS ROW
+   ========================= */
+.stats-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+}
+
+.stat-box {
+    flex: 1 1 180px;
+    background: #fff;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-box b {
+    font-size: 1.5rem;
+    color: #2980b9;
+}
+
+.stat-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* =========================
+   FORM SECTION
+   ========================= */
+.form-section {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+}
+
+.form-section h2 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.form-section input {
+    width: calc(33% - 10px);
+    margin-right: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-section input:focus {
+    border-color: #2980b9;
+    box-shadow: 0 0 5px rgba(41, 128, 185, 0.2);
+}
+
+.form-section button.primary {
+    padding: 10px 20px;
+    background: #2980b9;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.form-section button.primary:hover {
+    background: #1c5980;
+}
+
+.form-section button.primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* =========================
+   TABLE SECTIONS
+   ========================= */
+.table-section {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    overflow-x: auto;
+}
+
+.table-section h2 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.table-section table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-section table thead {
+    background: #2980b9;
+    color: #fff;
+    text-align: left;
+}
+
+.table-section table thead th {
+    padding: 12px 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.table-section table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    transition: background 0.2s ease;
+}
+
+.table-section table tbody tr:hover {
+    background: #f1f6ff;
+}
+
+.table-section table tbody td {
+    padding: 10px;
+    font-size: 0.95rem;
+    vertical-align: middle;
+}
+
+.table-section table tbody td button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.table-section table tbody td button:hover {
+    opacity: 0.85;
+}
+
+.table-section table tbody td button:nth-child(1) {
+    background: #f39c12;
+    color: #fff;
+}
+
+/* Edit */
+.table-section table tbody td button:nth-child(2) {
+    background: #27ae60;
+    color: #fff;
+}
+
+/* Set Active */
+.table-section table tbody td button:nth-child(3) {
+    background: #3498db;
+    color: #fff;
+}
+
+/* Activate/Deactivate */
+.table-section table tbody td button:nth-child(4) {
+    background: #8e44ad;
+    color: #fff;
+}
+
+/* Recount */
+.table-section table tbody td button:nth-child(5) {
+    background: #e74c3c;
+    color: #fff;
+}
+
+/* Delete */
+
+.table-section button.primary {
+    background: #e74c3c;
+    margin-bottom: 15px;
+}
+
+.table-section button.primary:hover {
+    background: #c0392b;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 1024px) {
+    .form-section input {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .stats-row {
+        flex-direction: column;
+    }
+
+    .table-section table thead {
+        font-size: 0.85rem;
+    }
+
+    .table-section table tbody td {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .table-section table thead th,
+    .table-section table tbody td {
+        padding: 8px 5px;
+    }
+}

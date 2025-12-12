@@ -508,3 +508,17 @@
     margin-top: 10px;
   }
 }
+
+.cancel-msg.info {
+  color: #ff6b6b;
+  font-weight: 500;
+  margin-top: 5px;
+  margin-bottom: 8px;
+}
+
+.cancel-msgg.info {
+  color: #46e32a;
+  font-weight: 500;
+  margin-top: 5px;
+  margin-bottom: 8px;
+}

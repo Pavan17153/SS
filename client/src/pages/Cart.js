@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { emitCartUpdate, cartEvent } from "./cartEvents";
 import { FaTrash } from "react-icons/fa";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import "../Cart.css";
 
 export default function Cart() {
@@ -11,49 +12,89 @@ export default function Cart() {
   const [cart, setCart] = useState([]);
   const [undoItem, setUndoItem] = useState(null);
   const [undoVisible, setUndoVisible] = useState(false);
+  const [popupMsg, setPopupMsg] = useState("");
+  const [coupons, setCoupons] = useState([]);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [user, setUser] = useState(auth.currentUser || null);
 
-  const [popupMsg, setPopupMsg] = useState(""); // 🔥 new popup message
-
-  // Function to show popup
+  // Show popup message
   const showPopup = (msg) => {
     setPopupMsg(msg);
     setTimeout(() => setPopupMsg(""), 2000);
   };
 
-  // Load correct cart for current user or guest
+  // Load cart from localStorage
   const loadCart = () => {
     const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     const stored = JSON.parse(localStorage.getItem(key) || "[]");
-
-    // Ensure qty + stock always exist
     const fixed = stored.map((item) => ({
       ...item,
       qty: item.qty ? item.qty : 1,
-      stock: item.stock ? item.stock : 5, // Default fallback (keep same)
+      stock: item.stock ? item.stock : 5,
     }));
-
     setCart(fixed);
   };
 
-  useEffect(() => {
-    loadCart();
+  // Load applied coupon from localStorage
+  const loadAppliedCoupon = () => {
+    const stored = localStorage.getItem("ssf_appliedCoupon");
+    if (stored) setAppliedCoupon(JSON.parse(stored));
+  };
 
-    const unsub = auth.onAuthStateChanged(() => {
+  // Fetch coupons used by current user
+  const fetchUserUsedCoupons = async (email) => {
+    if (!email) return [];
+    try {
+      const q = query(collection(db, "couponUsed"), where("usedBy", "==", email));
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => d.data().couponName).filter(Boolean);
+    } catch (err) {
+      console.error("fetchUserUsedCoupons error:", err);
+      return [];
+    }
+  };
+
+  // Fetch active coupons and filter those already used by user
+  const loadCoupons = async () => {
+    const email = auth.currentUser?.email;
+    const usedCoupons = await fetchUserUsedCoupons(email);
+
+    try {
+      const snap = await getDocs(
+        query(collection(db, "coupons"), orderBy("createdAt", "desc"))
+      );
+
+      const activeCoupons = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((c) => c.active && !usedCoupons.includes(c.name)); // filter out already used
+
+      setCoupons(activeCoupons);
+    } catch (err) {
+      console.error("loadCoupons error:", err);
+      setCoupons([]);
+    }
+  };
+
+  useEffect(() => {
+    const unsubAuth = auth.onAuthStateChanged((u) => {
+      setUser(u);
       loadCart();
+      loadCoupons();
+      loadAppliedCoupon();
     });
 
     const handler = () => loadCart();
     cartEvent.addEventListener("cartUpdated", handler);
 
     return () => {
-      unsub();
+      unsubAuth();
       cartEvent.removeEventListener("cartUpdated", handler);
     };
   }, []);
 
   // TOTALS
-  const total = cart.reduce((s, i) => s + (i.price * (i.qty || 1)), 0);
+  const total = cart.reduce((s, i) => s + i.price * (i.qty || 1), 0);
 
   // SHIPPING RULES
   let shipping = 0;
@@ -64,11 +105,29 @@ export default function Cart() {
     else shipping = 240;
   }
 
-  const grandTotal = total + shipping;
+  // APPLY COUPON  ( FIXED 🔥🔥 )
+  const applyCoupon = (coupon) => {
 
-  // SAVE CART + NOTIFY NAVBAR
+    // ---- NEW VALIDATION ADDED ----
+    if (total < 700) {
+      const need = 700 - total;
+      showPopup(`You need to shop ₹${need} more to use this coupon.`);
+      return;
+    }
+    // ---- END FIX ----
+
+    setAppliedCoupon(coupon);
+    localStorage.setItem("ssf_appliedCoupon", JSON.stringify(coupon));
+    showPopup(`Coupon ${coupon.name} applied for ₹${coupon.amount} off!`);
+  };
+
+  // GRAND TOTAL WITH COUPON
+  const grandTotal =
+    total + shipping - (appliedCoupon ? appliedCoupon.amount : 0);
+
+  // SAVE CART
   const saveCart = (updated) => {
-    const email = auth.currentUser && auth.currentUser.email ? auth.currentUser.email : null;
+    const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     localStorage.setItem(key, JSON.stringify(updated));
     setCart(updated);
@@ -79,15 +138,12 @@ export default function Cart() {
   const removeItem = (index) => {
     const item = cart[index];
     const updated = cart.filter((_, i) => i !== index);
-
     setUndoItem({ item, index });
     setUndoVisible(true);
     saveCart(updated);
-
     setTimeout(() => setUndoVisible(false), 5000);
   };
 
-  // UNDO
   const undoDelete = () => {
     if (!undoItem) return;
     const updated = [...cart];
@@ -97,32 +153,24 @@ export default function Cart() {
     setUndoVisible(false);
   };
 
-  // DECREASE QTY
   const decreaseQty = (index) => {
     const updated = [...cart];
-    if (updated[index].qty > 1) {
-      updated[index].qty -= 1;
-      saveCart(updated);
-    } else {
-      removeItem(index);
-    }
+    if (updated[index].qty > 1) updated[index].qty -= 1;
+    else removeItem(index);
+    saveCart(updated);
   };
 
-  // INCREASE QTY with STOCK LIMIT
   const increaseQty = (index) => {
     const updated = [...cart];
     const item = updated[index];
-
     if (item.qty >= item.stock) {
       showPopup(`Only ${item.stock} items available in stock`);
-      return; // ❌ stop increasing
+      return;
     }
-
     item.qty += 1;
     saveCart(updated);
   };
 
-  // CHECKOUT
   const checkout = () => {
     localStorage.setItem("ssf_checkout_total", grandTotal);
     nav("/checkout");
@@ -130,21 +178,21 @@ export default function Cart() {
 
   return (
     <div className="cart-container">
-
-      {/* 🔥 STOCK WARNING POPUP */}
       {popupMsg && (
-        <div style={{
-          position: "fixed",
-          top: "20px",
-          right: "20px",
-          background: "#ff4d4d",
-          color: "white",
-          padding: "10px 18px",
-          borderRadius: "8px",
-          fontWeight: "600",
-          zIndex: 9999,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            background: "#ff4d4d",
+            color: "white",
+            padding: "10px 18px",
+            borderRadius: "8px",
+            fontWeight: "600",
+            zIndex: 9999,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          }}
+        >
           {popupMsg}
         </div>
       )}
@@ -159,7 +207,7 @@ export default function Cart() {
           border: "none",
           cursor: "pointer",
           marginBottom: "15px",
-          fontWeight: "600"
+          fontWeight: "600",
         }}
       >
         ← Back
@@ -192,19 +240,21 @@ export default function Cart() {
 
             {cart.map((c, idx) => (
               <div className="cart-row" key={idx}>
-                <FaTrash className="delete-icon" onClick={() => removeItem(idx)} />
+                <FaTrash
+                  className="delete-icon"
+                  onClick={() => removeItem(idx)}
+                />
                 <img src={c.image} alt="" className="cart-img" />
 
                 <div>
                   <span className="row-product">{c.name}</span>
 
-                  {/* 🔥 STOCK AVAILABILITY BADGE */}
                   <div
                     style={{
                       fontSize: "13px",
                       marginTop: "3px",
                       color: c.stock > 0 ? "#0a8a24" : "#d00000",
-                      fontWeight: "600"
+                      fontWeight: "600",
                     }}
                   >
                     {c.stock > 0
@@ -220,10 +270,10 @@ export default function Cart() {
                   <span>{c.qty}</span>
                   <button
                     onClick={() => increaseQty(idx)}
-                    disabled={c.qty >= c.stock} // 🔥 PREVENT BUTTON CLICK
+                    disabled={c.qty >= c.stock}
                     style={{
                       opacity: c.qty >= c.stock ? 0.5 : 1,
-                      cursor: c.qty >= c.stock ? "not-allowed" : "pointer"
+                      cursor: c.qty >= c.stock ? "not-allowed" : "pointer",
                     }}
                   >
                     +
@@ -244,11 +294,29 @@ export default function Cart() {
                 <span>Subtotal</span>
                 <strong>₹{total}</strong>
               </div>
-
               <div className="summary-row">
                 <span>Shipping</span>
                 <strong>Flat rate: ₹{shipping}</strong>
               </div>
+
+              {/* COUPON BOX */}
+              {coupons.length > 0 && !appliedCoupon && (
+                <div className="coupon-box">
+                  <h4>Available Coupons</h4>
+                  {coupons.map((c) => (
+                    <button key={c.id} onClick={() => applyCoupon(c)}>
+                      {c.name} - ₹{c.amount} Off
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {appliedCoupon && (
+                <div className="applied-coupon">
+                  Coupon <b>{appliedCoupon.name}</b> applied: ₹
+                  {appliedCoupon.amount} off
+                </div>
+              )}
 
               <div className="summary-row">
                 <span>Total</span>
