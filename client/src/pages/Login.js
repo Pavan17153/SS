@@ -1,22 +1,36 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import "./Login.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
-  const [errorMsg, setErrorMsg] = useState(""); 
-  const [successMsg, setSuccessMsg] = useState(""); 
+  const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const navigate = useNavigate();
 
-  // ---------------------------
-  // LOGIN FUNCTION
-  // ---------------------------
+  // Load remembered email
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberEmail");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // LOGIN
   const submit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
@@ -28,100 +42,101 @@ export default function Login() {
     }
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
+      await setPersistence(
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence
+      );
 
-      const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, pw);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim().toLowerCase(),
+        pw
+      );
 
       if (!userCredential.user.emailVerified) {
-        setErrorMsg("Email not verified. Check your inbox and verify before logging in.");
+        setErrorMsg("Email not verified. Please verify before login.");
         return;
       }
+
+      rememberMe
+        ? localStorage.setItem("rememberEmail", email)
+        : localStorage.removeItem("rememberEmail");
 
       setSuccessMsg("Login successful!");
       navigate("/");
     } catch (err) {
-      if (err.code === "auth/user-not-found") {
-        setErrorMsg("Email not found. Please signup first.");
-      } else if (err.code === "auth/wrong-password") {
-        setErrorMsg("Incorrect password. Please try again.");
-      } else if (err.code === "auth/invalid-email") {
-        setErrorMsg("Invalid email address.");
-      } else {
-        setErrorMsg(err.message);
-      }
+      setErrorMsg(err.message);
     }
   };
 
-  // ---------------------------
-  // FORGOT PASSWORD FUNCTION
-  // ---------------------------
+  // FORGOT PASSWORD
   const forgotPassword = async () => {
-    setErrorMsg("");
-    setSuccessMsg("");
+    if (!email) return setErrorMsg("Enter email first.");
 
-    if (!email.trim()) {
-      setErrorMsg("Please enter your email first.");
-      return;
-    }
-
-    try {
-      const cleanEmail = email.trim().toLowerCase();
-
-      await sendPasswordResetEmail(auth, cleanEmail);
-      setSuccessMsg("Password reset link sent to your email.");
-    } catch (err) {
-      if (err.code === "auth/user-not-found") {
-        setErrorMsg("Email not registered. Please signup first.");
-      } else {
-        setErrorMsg(err.message);
-      }
-    }
+    await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+    setSuccessMsg("Password reset link sent to your email.");
   };
 
   return (
-    <div style={{ maxWidth: 450 }} className="mx-auto mt-4">
-      <h2 className="mb-3">Login</h2>
+    <div className="auth-page">
+      <div className="auth-card">
 
-      {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
-      {successMsg && <p style={{ color: "green" }}>{successMsg}</p>}
+        {/* BRAND */}
+        <div className="brand-logo">🛍️ SS Fashion</div>
 
-      <form onSubmit={submit}>
-        <input
-          className="form-control mb-3"
-          placeholder="Enter Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          className="form-control mb-3"
-          placeholder="Enter Password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-        />
-        <button className="btn btn-primary w-100 mb-3">Login</button>
-      </form>
+        <h2 className="auth-title">Sign in</h2>
+        <p className="auth-subtitle">Welcome back</p>
 
-      <p className="text-center">
-        <button
-          onClick={forgotPassword}
-          style={{
-            border: "none",
-            background: "none",
-            color: "#007bff",
-            cursor: "pointer",
-          }}
-        >
-          Forgot Password?
-        </button>
-      </p>
+        {errorMsg && <p className="auth-error">{errorMsg}</p>}
+        {successMsg && <p className="auth-success">{successMsg}</p>}
 
-      <p className="text-center mt-2">
-        Don't have an account?{" "}
-        <Link to="/signup" style={{ color: "#ff4d6d", fontWeight: "bold" }}>
-          Create Account
+        <form onSubmit={submit}>
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <div className="password-wrap">
+            <input
+              type={showPw ? "text" : "password"}
+              placeholder="Password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+            />
+            <span
+              className="toggle-eye"
+              onClick={() => setShowPw(!showPw)}
+            >
+              {showPw ? <FaEyeSlash /> : <FaEye />}
+            </span>
+          </div>
+
+          <div className="remember-row">
+            <label>
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              Remember me
+            </label>
+
+            <button type="button" className="forgot-btn" onClick={forgotPassword}>
+              Forgot password?
+            </button>
+          </div>
+
+          <button className="auth-btn">Login</button>
+        </form>
+
+        <div className="divider">New to SS Fashion?</div>
+
+        <Link to="/signup" className="signup-btn">
+          Create your SS Fashion account
         </Link>
-      </p>
+      </div>
     </div>
   );
 }

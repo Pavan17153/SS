@@ -1,40 +1,128 @@
+/* ===============================
+   POLICY PAGE – AMAZON STYLE
+   UPDATED WITH PINK & BLACK
+   =============================== */
+
 .policy-container {
-  padding: 40px;
   max-width: 900px;
-  margin: auto;
+  margin: 30px auto;
+  padding: 20px 18px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   font-family: "Segoe UI", Arial, sans-serif;
 }
 
+/* TITLE */
 .policy-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f1111;
+  /* Black text */
+  margin-bottom: 12px;
+  text-align: center;
 }
 
-.policy-content {
-  margin-top: 20px;
-  line-height: 1.8;
-}
-
-.policy-section {
-  margin-bottom: 25px;
-}
-
-.policy-section h3 {
-  font-size: 20px;
-  color: #444;
-  margin-bottom: 5px;
-}
-
-.policy-section p {
-  font-size: 16px;
-  color: #555;
-}
-
-hr {
-  margin-top: 10px;
-  margin-bottom: 25px;
+/* DIVIDER */
+.policy-container hr {
   border: none;
-  height: 2px;
-  background: #eee;
+  height: 3px;
+  width: 80px;
+  background: linear-gradient(90deg, #ff4d6d, #ff85a1);
+  /* Pink gradient */
+  margin: 10px auto 20px auto;
+  border-radius: 4px;
+}
+
+/* CONTENT */
+.policy-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* SECTION */
+.policy-section {
+  padding: 16px 18px;
+  border-left: 5px solid #ff4d6d;
+  /* Pink left border */
+  background: #fff0f5;
+  /* Light pink background */
+  border-radius: 6px;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Hover effect */
+.policy-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 77, 109, 0.2);
+  border-color: #ff4d6d;
+}
+
+/* SECTION HEADINGS */
+.policy-section h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  /* Black heading */
+}
+
+/* SECTION TEXT */
+.policy-section p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #222;
+  /* Dark black text for readability */
+}
+
+/* ===============================
+   MOBILE RESPONSIVE
+   =============================== */
+@media (max-width: 768px) {
+  .policy-container {
+    margin: 20px;
+    padding: 18px;
+  }
+
+  .policy-title {
+    font-size: 24px;
+  }
+
+  .policy-section {
+    padding: 14px 16px;
+  }
+
+  .policy-section h3 {
+    font-size: 15px;
+  }
+
+  .policy-section p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .policy-container {
+    margin: 15px;
+    padding: 14px;
+  }
+
+  .policy-title {
+    font-size: 20px;
+  }
+
+  .policy-section {
+    padding: 12px;
+  }
+
+  .policy-section h3 {
+    font-size: 14px;
+  }
+
+  .policy-section p {
+    font-size: 13px;
+  }
 }

@@ -3,28 +3,56 @@ import React from "react";
 import "../Policy.css";
 
 export default function Shipping() {
-  return React.createElement(
-    "div",
-    { className: "policy-container" },
-    React.createElement("h1", { className: "policy-title" }, "Shipping Policy"),
-    React.createElement("hr"),
-    React.createElement(
-      "div",
-      { className: "policy-content" },
-      [
-        { h: "1. Delivery Time", t: "Minimum: 5 days, Maximum: 10 days depending on location and courier." },
-        { h: "2. Order Processing", t: "Orders are processed within 1–2 business days after confirmation." },
-        { h: "3. Shipping & Delivery", t: "Standard shipping is provided for all orders. Tracking details will be sent via email or SMS." },
-        { h: "4. Delivery Conditions", t: "Delivery may take longer due to weather, holidays, or logistics delays." },
-        { h: "5. Shipping Charges", t: "Shipping charges are shown at checkout. Free shipping may apply during offers." }
-      ].map(function (section, index) {
-        return React.createElement(
-          "div",
-          { className: "policy-section", key: index },
-          React.createElement("h3", null, section.h),
-          React.createElement("p", null, section.t)
-        );
-      })
-    )
+  return (
+    <div className="policy-container">
+      <h1 className="policy-title">Shipping Policy</h1>
+      <hr />
+
+      <div className="policy-content">
+
+        <div className="policy-section">
+          <h3>1. Delivery Time</h3>
+          <p>
+            Orders are typically delivered within <strong>5–10 business days</strong>,
+            depending on your delivery location and courier partner availability.
+          </p>
+        </div>
+
+        <div className="policy-section">
+          <h3>2. Order Processing</h3>
+          <p>
+            All orders are processed within <strong>1–2 business days </strong>
+            after payment confirmation. Orders placed on weekends or holidays
+            are processed on the next working day.
+          </p>
+        </div>
+
+        <div className="policy-section">
+          <h3>3. Shipping & Tracking</h3>
+          <p>
+            We provide reliable standard shipping for all orders. Once shipped,
+            tracking details will be shared via registered email or SMS.
+          </p>
+        </div>
+
+        <div className="policy-section">
+          <h3>4. Delivery Conditions</h3>
+          <p>
+            Delivery timelines may vary due to unforeseen circumstances such as
+            weather conditions, public holidays, courier delays, or remote-area
+            locations.
+          </p>
+        </div>
+
+        <div className="policy-section">
+          <h3>5. Shipping Charges</h3>
+          <p>
+            Shipping charges, if applicable, are clearly displayed during checkout.
+            Free shipping may be available during special promotions or offers.
+          </p>
+        </div>
+
+      </div>
+    </div>
   );
 }

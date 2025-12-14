@@ -1,0 +1,216 @@
+/* PAGE CENTER */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f3f3;
+    padding: 16px;
+}
+
+/* CARD */
+.auth-card {
+    width: 100%;
+    max-width: 380px;
+    background: #ffffff;
+    padding: 26px;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* LOGO */
+.brand-logo {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: #ff4d6d;
+    margin-bottom: 6px;
+}
+
+/* TITLE */
+.auth-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+.auth-subtitle {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* INPUT */
+.auth-card input[type="email"],
+.auth-card input[type="password"],
+.auth-card input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    border-radius: 6px;
+    border: 1px solid #d5d5d5;
+    font-size: 15px;
+}
+
+.auth-card input:focus {
+    outline: none;
+    border-color: #ff4d6d;
+    box-shadow: 0 0 0 1px #ff4d6d;
+}
+
+/* PASSWORD WRAPPER */
+.password-wrap {
+    position: relative;
+}
+
+.toggle-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+}
+
+/* REMEMBER ROW */
+.remember-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+/* AMAZON STYLE SMALL CHECKBOX */
+.remember-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+/* Smaller checkbox */
+.remember-row input[type="checkbox"] {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 1.3px solid #888;
+    border-radius: 3px;
+    position: relative;
+    cursor: pointer;
+}
+
+/* Checked */
+.remember-row input[type="checkbox"]:checked {
+    background: #007185;
+    border-color: #007185;
+}
+
+.remember-row input[type="checkbox"]:checked::after {
+    content: "✔";
+    position: absolute;
+    top: -3px;
+    left: 2px;
+    font-size: 11px;
+    color: white;
+}
+
+/* BUTTON */
+.auth-btn {
+    width: 100%;
+    background: #ff4d6d;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.auth-btn:hover {
+    background: #e63b5c;
+}
+
+/* FORGOT */
+.forgot-btn {
+    background: none;
+    border: none;
+    color: #007185;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.forgot-btn:hover {
+    text-decoration: underline;
+}
+
+/* DIVIDER */
+.divider {
+    text-align: center;
+    margin: 22px 0 14px;
+    font-size: 13px;
+    color: #777;
+    position: relative;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 33%;
+    height: 1px;
+    background: #ddd;
+}
+
+.divider::before {
+    left: 0;
+}
+
+.divider::after {
+    right: 0;
+}
+
+/* SIGNUP */
+.signup-btn {
+    display: block;
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #d5d5d5;
+    text-decoration: none;
+    color: #111;
+    font-weight: 500;
+}
+
+.signup-btn:hover {
+    background: #f7f7f7;
+}
+
+/* MESSAGES */
+.auth-error {
+    color: #d93025;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.auth-success {
+    color: #188038;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+/* MOBILE */
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 22px;
+    }
+
+    .auth-title {
+        font-size: 22px;
+    }
+}

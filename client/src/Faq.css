@@ -1,40 +1,111 @@
+/* =========================
+   FAQ PAGE CONTAINER
+   ========================= */
 .faq-container {
-  padding: 40px;
+  padding: 40px 20px;
   max-width: 900px;
-  margin: auto;
+  margin: 0 auto;
   font-family: "Segoe UI", Arial, sans-serif;
+  background: #ffffff;
 }
 
+/* PAGE TITLE */
 .faq-title {
   font-size: 32px;
   font-weight: 700;
   margin-bottom: 10px;
+  color: #222;
+  text-align: center;
 }
 
-.faq-list {
-  margin-top: 20px;
-  line-height: 1.8;
-}
-
-.faq-item {
-  margin-bottom: 25px;
-}
-
-.faq-item h3 {
-  font-size: 20px;
-  margin-bottom: 5px;
-  color: #444;
-}
-
-.faq-item p {
-  font-size: 16px;
-  color: #555;
-}
-
-hr {
-  margin-top: 10px;
-  margin-bottom: 25px;
+/* DIVIDER */
+.faq-container hr {
+  margin: 14px auto 30px;
   border: none;
-  height: 2px;
-  background: #eee;
+  height: 3px;
+  width: 70px;
+  background: linear-gradient(90deg, #ff4d6d, #ff85a1);
+  border-radius: 4px;
+}
+
+/* FAQ LIST */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* FAQ ITEM CARD */
+.faq-item {
+  background: #fff;
+  border: 1px solid #f1d3da;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.25s ease;
+}
+
+/* HOVER EFFECT */
+.faq-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 77, 109, 0.18);
+  border-color: #ff4d6d;
+}
+
+/* QUESTION */
+.faq-item h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #ff4d6d;
+  line-height: 1.4;
+}
+
+/* ANSWER */
+.faq-item p {
+  font-size: 15px;
+  color: #555;
+  line-height: 1.7;
+}
+
+/* =========================
+   TABLET VIEW
+   ========================= */
+@media (max-width: 768px) {
+  .faq-title {
+    font-size: 26px;
+  }
+
+  .faq-item h3 {
+    font-size: 17px;
+  }
+
+  .faq-item p {
+    font-size: 14.5px;
+  }
+}
+
+/* =========================
+   MOBILE VIEW
+   ========================= */
+@media (max-width: 480px) {
+  .faq-container {
+    padding: 30px 14px;
+  }
+
+  .faq-title {
+    font-size: 22px;
+  }
+
+  .faq-item {
+    padding: 16px;
+  }
+
+  .faq-item h3 {
+    font-size: 16px;
+  }
+
+  .faq-item p {
+    font-size: 14px;
+  }
 }

@@ -25,21 +25,21 @@ import Privacy from "./pages/Privacy";
 import Shipping from "./pages/Shipping";
 import Terms from "./pages/Terms";
 import Faq from "./pages/Faq";
+import AdminTerms from "./pages/AdminTerms";
 
 // Product Pages
 import ProductAdmin from "./pages/Products";
 import ProductList from "./pages/ProductList";
 
-// ⭐ NEW — Coupons Page
+// Coupons
 import Coupons from "./pages/Coupons";
 
-// ------------------ Layout ------------------
+/* ------------------ Layout ------------------ */
 function Layout({ children }) {
   const location = useLocation();
 
-  // Hide sidebar on these routes
-  const hideSidebarRoutes = ["/login"];
-  const hideSidebar = hideSidebarRoutes.includes(location.pathname);
+  // Hide sidebar only on login page
+  const hideSidebar = location.pathname === "/login";
 
   return (
     <div className="admin-layout">
@@ -49,12 +49,23 @@ function Layout({ children }) {
   );
 }
 
-// ------------------ Protected Route ------------------
-function ProtectedRoute({ user, element }) {
-  return user ? element : <Navigate to="/login" />;
+/* ------------------ Protected Route ------------------ */
+function ProtectedRoute({ user, children }) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
 }
 
-// ------------------ App Component ------------------
+/* ------------------ Public Route ------------------ */
+function PublicRoute({ user, children }) {
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
+/* ------------------ App Component ------------------ */
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,78 +75,57 @@ export default function App() {
       setUser(u);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <h3 style={{ padding: 30 }}>Checking Login...</h3>;
+  if (loading) {
+    return <h3 style={{ padding: 30 }}>Checking Login...</h3>;
+  }
 
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          {/* Login */}
-          <Route path="/login" element={<AdminLogin />} />
+      <Routes>
 
-          {/* Protected Routes */}
-          <Route
-            path="/"
-            element={<ProtectedRoute user={user} element={<Dashboard />} />}
-          />
-          <Route
-            path="/categories"
-            element={<ProtectedRoute user={user} element={<Categories />} />}
-          />
-          <Route
-            path="/orders"
-            element={<ProtectedRoute user={user} element={<Orders />} />}
-          />
-          <Route
-            path="/payments"
-            element={<ProtectedRoute user={user} element={<Payments />} />}
-          />
-          <Route
-            path="/contact"
-            element={<ProtectedRoute user={user} element={<Contact />} />}
-          />
-          <Route
-            path="/about"
-            element={<ProtectedRoute user={user} element={<About />} />}
-          />
-          <Route
-            path="/privacy"
-            element={<ProtectedRoute user={user} element={<Privacy />} />}
-          />
-          <Route
-            path="/shipping"
-            element={<ProtectedRoute user={user} element={<Shipping />} />}
-          />
-          <Route
-            path="/terms"
-            element={<ProtectedRoute user={user} element={<Terms />} />}
-          />
-          <Route
-            path="/faq"
-            element={<ProtectedRoute user={user} element={<Faq />} />}
-          />
+        {/* -------- PUBLIC ROUTES -------- */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute user={user}>
+              <AdminLogin />
+            </PublicRoute>
+          }
+        />
 
-          {/* ⭐ Coupons Route */}
-          <Route
-            path="/coupons"
-            element={<ProtectedRoute user={user} element={<Coupons />} />}
-          />
+        {/* ✅ Admin Terms must be PUBLIC */}
+        <Route path="/adminterms" element={<AdminTerms />} />
 
-          {/* Product Routes */}
-          <Route
-            path="/add-product"
-            element={<ProtectedRoute user={user} element={<ProductAdmin />} />}
-          />
-          <Route
-            path="/product-list"
-            element={<ProtectedRoute user={user} element={<ProductList />} />}
-          />
-        </Routes>
-      </Layout>
+        {/* -------- PROTECTED ADMIN ROUTES -------- */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute user={user}>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/categories" element={<Categories />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/payments" element={<Payments />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/shipping" element={<Shipping />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/faq" element={<Faq />} />
+                  <Route path="/coupons" element={<Coupons />} />
+                  <Route path="/add-product" element={<ProductAdmin />} />
+                  <Route path="/product-list" element={<ProductList />} />
+                </Routes>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+      </Routes>
     </BrowserRouter>
   );
 }

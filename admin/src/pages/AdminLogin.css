@@ -1,0 +1,121 @@
+.admin-login-page {
+    min-height: 100vh;
+    background: #eaeDED;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.amazon-header {
+    width: 100%;
+    background: #131921;
+    color: #fff;
+    padding: 18px 30px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.amazon-header h1 {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.amazon-header span {
+    font-size: 14px;
+    opacity: 0.85;
+}
+
+.admin-login-card {
+    background: #fff;
+    width: 360px;
+    margin-top: 40px;
+    padding: 24px 26px;
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.admin-login-card h2 {
+    font-size: 24px;
+    margin-bottom: 18px;
+}
+
+.admin-login-card label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-login-card input {
+    width: 100%;
+    padding: 9px;
+    margin-bottom: 14px;
+    border: 1px solid #a6a6a6;
+    border-radius: 4px;
+}
+
+.admin-login-card input:focus {
+    outline: none;
+    border-color: #f0c14b;
+    box-shadow: 0 0 0 2px rgba(240, 193, 75, .4);
+}
+
+.login-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.remember-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.remember-box input {
+    accent-color: #f0c14b;
+}
+
+.login-btn {
+    width: 100%;
+    background: #f0c14b;
+    border: 1px solid #a88734;
+    padding: 9px;
+    margin-top: 12px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background: #e2b33b;
+}
+
+.forgot-btn {
+    background: none;
+    border: none;
+    color: #0066c0;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.error-msg {
+    background: #ffecec;
+    color: #b12704;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.success-msg {
+    background: #e7f5ee;
+    color: #007600;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.login-footer {
+    font-size: 12px;
+    text-align: center;
+    margin-top: 14px;
+}

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { emitCartUpdate, cartEvent } from "./cartEvents";
 import { FaTrash } from "react-icons/fa";
 import { auth, db } from "../firebase";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where, doc, getDoc } from "firebase/firestore";
 import "../Cart.css";
 
 export default function Cart() {
@@ -23,17 +23,57 @@ export default function Cart() {
     setTimeout(() => setPopupMsg(""), 2000);
   };
 
+  // Save cart with timestamp
+  const saveCart = (updated) => {
+    const email = auth.currentUser?.email;
+    const key = email ? `ssf_cart_${email}` : "ssf_cart";
+    localStorage.setItem(key, JSON.stringify(updated));
+    // Save timestamp
+    localStorage.setItem(`${key}_time`, Date.now());
+    setCart(updated);
+    emitCartUpdate();
+  };
+
   // Load cart from localStorage
-  const loadCart = () => {
+  const loadCart = async () => {
     const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     const stored = JSON.parse(localStorage.getItem(key) || "[]");
+    const savedTime = parseInt(localStorage.getItem(`${key}_time`) || "0", 10);
+
+    // Remove cart if 2 days passed
+    if (savedTime && Date.now() - savedTime > 2 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(key);
+      localStorage.removeItem(`${key}_time`);
+      setCart([]);
+      return;
+    }
+
+    // Map default values
     const fixed = stored.map((item) => ({
       ...item,
       qty: item.qty ? item.qty : 1,
-      stock: item.stock ? item.stock : 5,
+      stockQty: item.stockQty !== undefined ? item.stockQty : 5,
     }));
+
     setCart(fixed);
+
+    // Update stockQty from Firestore
+    const updatedCart = await Promise.all(
+      fixed.map(async (item) => {
+        try {
+          const docSnap = await getDoc(doc(db, "products", item.id));
+          if (docSnap.exists()) {
+            return { ...item, stockQty: docSnap.data().stockQty || 0 };
+          }
+          return item;
+        } catch {
+          return item;
+        }
+      })
+    );
+
+    setCart(updatedCart);
   };
 
   // Load applied coupon from localStorage
@@ -55,7 +95,7 @@ export default function Cart() {
     }
   };
 
-  // Fetch active coupons and filter those already used by user
+  // Fetch active coupons
   const loadCoupons = async () => {
     const email = auth.currentUser?.email;
     const usedCoupons = await fetchUserUsedCoupons(email);
@@ -67,7 +107,7 @@ export default function Cart() {
 
       const activeCoupons = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((c) => c.active && !usedCoupons.includes(c.name)); // filter out already used
+        .filter((c) => c.active && !usedCoupons.includes(c.name));
 
       setCoupons(activeCoupons);
     } catch (err) {
@@ -105,34 +145,20 @@ export default function Cart() {
     else shipping = 240;
   }
 
-  // APPLY COUPON  ( FIXED 🔥🔥 )
+  // APPLY COUPON
   const applyCoupon = (coupon) => {
-
-    // ---- NEW VALIDATION ADDED ----
     if (total < 700) {
       const need = 700 - total;
       showPopup(`You need to shop ₹${need} more to use this coupon.`);
       return;
     }
-    // ---- END FIX ----
-
     setAppliedCoupon(coupon);
     localStorage.setItem("ssf_appliedCoupon", JSON.stringify(coupon));
     showPopup(`Coupon ${coupon.name} applied for ₹${coupon.amount} off!`);
   };
 
-  // GRAND TOTAL WITH COUPON
-  const grandTotal =
-    total + shipping - (appliedCoupon ? appliedCoupon.amount : 0);
-
-  // SAVE CART
-  const saveCart = (updated) => {
-    const email = auth.currentUser?.email;
-    const key = email ? `ssf_cart_${email}` : "ssf_cart";
-    localStorage.setItem(key, JSON.stringify(updated));
-    setCart(updated);
-    emitCartUpdate();
-  };
+  // GRAND TOTAL
+  const grandTotal = total + shipping - (appliedCoupon ? appliedCoupon.amount : 0);
 
   // REMOVE ITEM
   const removeItem = (index) => {
@@ -163,15 +189,31 @@ export default function Cart() {
   const increaseQty = (index) => {
     const updated = [...cart];
     const item = updated[index];
-    if (item.qty >= item.stock) {
-      showPopup(`Only ${item.stock} items available in stock`);
+    if (item.qty >= item.stockQty) {
+      showPopup(`Only ${item.stockQty} items available in stock`);
       return;
     }
     item.qty += 1;
     saveCart(updated);
   };
 
-  const checkout = () => {
+  // CHECK STOCK BEFORE PROCEEDING
+  const proceedCheckout = async () => {
+    for (let i = 0; i < cart.length; i++) {
+      const item = cart[i];
+      const docRef = doc(db, "products", item.id);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        showPopup(`"${item.name}" does not exist anymore`);
+        return;
+      }
+      const realStock = docSnap.data().stockQty || 0;
+      if (realStock < item.qty) {
+        showPopup(`"${item.name}" is out of stock. Only ${realStock} left`);
+        return;
+      }
+    }
+
     localStorage.setItem("ssf_checkout_total", grandTotal);
     nav("/checkout");
   };
@@ -248,17 +290,16 @@ export default function Cart() {
 
                 <div>
                   <span className="row-product">{c.name}</span>
-
                   <div
                     style={{
                       fontSize: "13px",
                       marginTop: "3px",
-                      color: c.stock > 0 ? "#0a8a24" : "#d00000",
+                      color: c.stockQty > 0 ? "#0a8a24" : "#d00000",
                       fontWeight: "600",
                     }}
                   >
-                    {c.stock > 0
-                      ? `Stock Available: ${c.stock}`
+                    {c.stockQty > 0
+                      ? `Stock Available: ${c.stockQty}`
                       : "Out of Stock"}
                   </div>
                 </div>
@@ -270,10 +311,10 @@ export default function Cart() {
                   <span>{c.qty}</span>
                   <button
                     onClick={() => increaseQty(idx)}
-                    disabled={c.qty >= c.stock}
+                    disabled={c.qty >= c.stockQty}
                     style={{
-                      opacity: c.qty >= c.stock ? 0.5 : 1,
-                      cursor: c.qty >= c.stock ? "not-allowed" : "pointer",
+                      opacity: c.qty >= c.stockQty ? 0.5 : 1,
+                      cursor: c.qty >= c.stockQty ? "not-allowed" : "pointer",
                     }}
                   >
                     +
@@ -323,7 +364,7 @@ export default function Cart() {
                 <strong>₹{grandTotal}</strong>
               </div>
 
-              <button className="checkout-btn" onClick={checkout}>
+              <button className="checkout-btn" onClick={proceedCheckout}>
                 Proceed to Checkout
               </button>
             </div>

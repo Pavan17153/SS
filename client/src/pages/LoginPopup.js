@@ -125,8 +125,7 @@ export default function LoginPopup({
     } catch (err) {
       let text = "Cannot send reset email.";
 
-      if (err.code === "auth/user-not-found")
-        text = "Email not registered.";
+      if (err.code === "auth/user-not-found") text = "Email not registered.";
 
       setMsg({ text, type: "error" });
     }
@@ -149,9 +148,7 @@ export default function LoginPopup({
         {/* MESSAGE INSIDE POPUP */}
         {msg.text && (
           <div
-            className={`popup-msg ${
-              msg.type === "error" ? "error" : "success"
-            }`}
+            className={`popup-msg ${msg.type === "error" ? "error" : "success"}`}
           >
             {msg.text}
           </div>
@@ -162,7 +159,7 @@ export default function LoginPopup({
             type="email"
             placeholder="Enter Email"
             value={email}
-            className="form-field"
+            className="form-field white-input"
             onChange={(e) => setEmail(e.target.value)}
           />
 
@@ -170,7 +167,7 @@ export default function LoginPopup({
             type="password"
             placeholder="Enter Password"
             value={password}
-            className="form-field"
+            className="form-field white-input"
             onChange={(e) => setPassword(e.target.value)}
           />
 

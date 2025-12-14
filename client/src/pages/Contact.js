@@ -1,45 +1,57 @@
-﻿import React, { useEffect } from "react";
+﻿// client/Contact.js
+import React, { useEffect, useState } from "react";
 import "../Contact.css";
+import { db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Contact() {
+  const [info, setInfo] = useState(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0); // Move page to top when opened
+    window.scrollTo(0, 0);
+    fetchData();
   }, []);
+
+  async function fetchData() {
+    try {
+      const ref = doc(db, "siteSettings", "contactInfo");
+      const snap = await getDoc(ref);
+
+      if (snap.exists()) {
+        setInfo(snap.data());
+      }
+    } catch (err) {
+      console.error("Error fetching contact info:", err);
+    }
+  }
+
+  if (!info) return <p className="loading-text">Loading...</p>;
 
   return (
     <div className="contact-container">
-
       <h2 className="contact-title">Contact Us</h2>
 
-      {/* Motivational / Inquiry Questions Section */}
+      {/* Quotes */}
       <div className="contact-quote-box">
-        <p className="contact-quote">
-          Have a question about our products?  
-        </p>
-        <p className="contact-quote">
-          Need help choosing the right design or blouse stitching pattern?
-        </p>
-        <p className="contact-quote">
-          Looking for custom embroidery work or bulk orders?
-        </p>
-        <p className="contact-quote">
-          We are here to assist you with anything you need. Reach out using the details below!
-        </p>
+        {info.quotes?.map((q, index) => (
+          <p className="contact-quote" key={index}>
+            {q}
+          </p>
+        ))}
       </div>
 
       <div className="contact-card">
         <h4>📍 Address</h4>
-        <p>RBI Layout, JP Nagar, Bangalore - 560078</p>
+        <p>{info.address}</p>
 
         <h4>📞 Phone</h4>
-        <p>+91 6300941733</p>
+        <p>{info.phone}</p>
 
         <h4>📧 Email</h4>
-        <p>support@radhacollections.in</p>
+        <p>{info.email}</p>
 
         <h4>🕒 Working Hours</h4>
-        <p>Monday - Saturday: 10:00 AM to 7:00 PM</p>
+        <p>{info.hours}</p>
       </div>
     </div>
   );
