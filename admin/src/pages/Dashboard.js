@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import "../AdminHome.css";
+import AdminNotificationsBell from "./AdminNotificationsBell";
 
 export default function AdminHome() {
   const [loading, setLoading] = useState(true);
@@ -98,7 +99,6 @@ export default function AdminHome() {
     }
   };
 
-  // ADD NEW SLIDER
   const addSliderImage = () => {
     setContent({
       ...content,
@@ -106,7 +106,6 @@ export default function AdminHome() {
     });
   };
 
-  // ADD TRENDING ITEM
   const addTrendingItem = () => {
     setContent({
       ...content,
@@ -114,7 +113,6 @@ export default function AdminHome() {
     });
   };
 
-  // SAVE TO FIRESTORE
   const saveChanges = async () => {
     try {
       await setDoc(refDoc, content, { merge: true });
@@ -128,7 +126,18 @@ export default function AdminHome() {
 
   return (
     <div className="admin-home" style={{ padding: 20, maxWidth: 900 }}>
-      <h2>Admin — Update Home Page</h2>
+
+      {/* 🔔 HEADER WITH NOTIFICATION BELL */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20
+        }}
+      >
+        <h2>Admin — Update Home Page</h2>
+      </div>
 
       <label>Title</label>
       <input
@@ -148,20 +157,11 @@ export default function AdminHome() {
       <h3 style={{ marginTop: 20 }}>Slider Images</h3>
 
       {content.sliderImages.map((img, index) => (
-        <div
-          key={index}
-          style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}
-        >
+        <div key={index} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
           <img
             src={img || "/placeholder.jpg"}
             alt=""
-            style={{
-              width: 150,
-              height: 90,
-              borderRadius: 8,
-              objectFit: "cover",
-              border: "1px solid #ddd"
-            }}
+            style={{ width: 150, height: 90, borderRadius: 8, objectFit: "cover", border: "1px solid #ddd" }}
           />
 
           <input type="file" accept="image/*" onChange={(e) => handleUpload(e, "slider", index)} />
@@ -186,10 +186,7 @@ export default function AdminHome() {
       <h3 style={{ marginTop: 30 }}>Trending Collections</h3>
 
       {content.trending.map((t, index) => (
-        <div
-          key={index}
-          style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}
-        >
+        <div key={index} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
           <input
             placeholder="Name"
             value={t.name}
@@ -205,13 +202,7 @@ export default function AdminHome() {
           <img
             src={t.image || "/placeholder.jpg"}
             alt=""
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 8,
-              objectFit: "cover",
-              border: "1px solid #ddd"
-            }}
+            style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover", border: "1px solid #ddd" }}
           />
 
           <input type="file" accept="image/*" onChange={(e) => handleUpload(e, "trending", index)} />

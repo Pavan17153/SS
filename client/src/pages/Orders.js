@@ -1,10 +1,18 @@
 ﻿// src/pages/Orders.js
 import React, { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDoc,
+} from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import "../Orders.css";
-
+import { sendOrderStatusEmail } from "./notify";
 function toMillis(createdAt) {
   if (!createdAt) return 0;
   if (createdAt.toDate) return createdAt.toDate().getTime();
@@ -42,24 +50,34 @@ export default function Orders() {
     }
 
     setLoading(true);
-    const q = query(collection(db, "orders"), where("customerEmail", "==", userEmail));
+    const q = query(
+      collection(db, "orders"),
+      where("customerEmail", "==", userEmail)
+    );
 
     const unsub = onSnapshot(
       q,
       (snapshot) => {
-        const data = snapshot.docs.map((doc) => {
-          const d = doc.data();
+        const data = snapshot.docs.map((docSnap) => {
+          const d = docSnap.data();
           return {
-            id: doc.id,
+            id: docSnap.id,          // Firestore document ID (used internally)
+            orderId: d.orderId,      // SSF-0001 (shown to user)
             ...d,
-            status: (d.status || "").charAt(0).toUpperCase() + (d.status || "").slice(1).toLowerCase(),
+            status:
+              (d.status || "").charAt(0).toUpperCase() +
+              (d.status || "").slice(1).toLowerCase(),
           };
         });
 
         data.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
 
         setOrders(data);
-        setFilteredOrders(statusFilter === "All" ? data : data.filter((o) => o.status === statusFilter));
+        setFilteredOrders(
+          statusFilter === "All"
+            ? data
+            : data.filter((o) => o.status === statusFilter)
+        );
         setLoading(false);
       },
       (err) => {
@@ -71,10 +89,9 @@ export default function Orders() {
     return () => unsub();
   }, [userEmail, statusFilter]);
 
-  const askCancelOrder = (orderId) => {
-    setCancelPopup({ show: true, orderId });
+  const askCancelOrder = (docId) => {
+    setCancelPopup({ show: true, orderId: docId });
   };
-
   const confirmCancel = async () => {
     if (!cancelPopup.orderId) return;
 
@@ -83,7 +100,9 @@ export default function Orders() {
       const snapshot = await getDoc(ref);
       if (!snapshot.exists()) throw new Error("Order does not exist");
 
-      const currentStatus = (snapshot.data().status || "").toLowerCase();
+      const order = snapshot.data(); // ✅ FIX
+      const currentStatus = (order.status || "").toLowerCase();
+
       if (["shipped", "delivered"].includes(currentStatus)) {
         alert("Cannot cancel an order that is already shipped or delivered.");
         setCancelPopup({ show: false, orderId: null });
@@ -92,12 +111,34 @@ export default function Orders() {
 
       await updateDoc(ref, { status: "Cancelled" });
 
-      setOrders((prev) => prev.map((o) => (o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o)));
-      setFilteredOrders((prev) => prev.map((o) => (o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o)));
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o
+        )
+      );
+
+      setFilteredOrders((prev) =>
+        prev.map((o) =>
+          o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o
+        )
+      );
 
       setCancelPopup({ show: false, orderId: null });
       setSuccessPopup(true);
       setTimeout(() => setSuccessPopup(false), 2500);
+
+      // ✅ CANCEL EMAIL (NOW WORKS)
+      await sendOrderStatusEmail({
+        email: order.customerEmail,
+        orderId: order.orderId,
+        paymentId: order.paymentId,
+        amount: order.totalPrice,
+        name: order.billingDetails?.firstName || "Customer",
+        items: order.items,
+        shippingAddress: order.billingDetails,
+        statusType: "Cancelled",
+      });
+
     } catch (err) {
       console.error(err);
       alert("Failed to cancel order.");
@@ -114,17 +155,16 @@ export default function Orders() {
     return (rank[cur] || 0) >= (rank[step.toLowerCase()] || 0);
   };
 
-  if (!userEmail) return <p className="orders-center">Please login to see your orders.</p>;
-  if (loading) return <p className="orders-center loading">Loading your orders...</p>;
+  if (!userEmail)
+    return <p className="orders-center">Please login to see your orders.</p>;
+  if (loading)
+    return (
+      <p className="orders-center loading">Loading your orders...</p>
+    );
 
   return (
     <>
-      {/* IMAGE POPUP */}
-      {popupImage && (
-        <div className="img-popup-overlay" onClick={() => setPopupImage("")}>
-          <img src={popupImage} className="img-popup" alt="Preview" />
-        </div>
-      )}
+
 
       {/* CANCEL POPUP */}
       {cancelPopup.show && (
@@ -134,10 +174,16 @@ export default function Orders() {
             <p>Are you sure you want to cancel this order?</p>
 
             <div className="cancel-top-btns">
-              <button className="cancel-top-btn-no" onClick={closeCancelPopup}>
+              <button
+                className="cancel-top-btn-no"
+                onClick={closeCancelPopup}
+              >
                 No
               </button>
-              <button className="cancel-top-btn-yes" onClick={confirmCancel}>
+              <button
+                className="cancel-top-btn-yes"
+                onClick={confirmCancel}
+              >
                 Yes, Cancel
               </button>
             </div>
@@ -153,13 +199,16 @@ export default function Orders() {
       )}
 
       <div className={darkMode ? "orders-wrapper dark" : "orders-wrapper"}>
-
         {/* SIDEBAR */}
         <aside className="orders-sidebar">
           <h3>Filters</h3>
 
           <label>Status:</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="orders-filter-select">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="orders-filter-select"
+          >
             <option>All</option>
             <option>Pending</option>
             <option>Processing</option>
@@ -171,19 +220,30 @@ export default function Orders() {
 
           <p className="filter-count">Results: {filteredOrders.length}</p>
 
-          <button className="dark-btn" onClick={() => setDarkMode(!darkMode)}>
+          <button
+            className="dark-btn"
+            onClick={() => setDarkMode(!darkMode)}
+          >
             {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
           </button>
         </aside>
 
         {/* MOBILE FILTER */}
-        <button className="mobile-filter-btn" onClick={() => setMobileFilterOpen(!mobileFilterOpen)}>
+        <button
+          className="mobile-filter-btn"
+          onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+        >
           {mobileFilterOpen ? "Close Filters ▲" : "Filters ▼"}
         </button>
+
         {mobileFilterOpen && (
           <div className="mobile-filter-panel">
             <label>Status:</label>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="mobile-filter-select">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="mobile-filter-select"
+            >
               <option>All</option>
               <option>Pending</option>
               <option>Processing</option>
@@ -192,8 +252,15 @@ export default function Orders() {
               <option>Delivered</option>
               <option>Cancelled</option>
             </select>
-            <p className="mobile-filter-count">Results: {filteredOrders.length}</p>
-            <button className="mobile-theme-btn" onClick={() => setDarkMode(!darkMode)}>
+
+            <p className="mobile-filter-count">
+              Results: {filteredOrders.length}
+            </p>
+
+            <button
+              className="mobile-theme-btn"
+              onClick={() => setDarkMode(!darkMode)}
+            >
               {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
             </button>
           </div>
@@ -205,22 +272,33 @@ export default function Orders() {
 
           {filteredOrders.map((order) => (
             <div key={order.id} className="order-card animate-card">
-
               {/* TOP */}
               <div className="order-top">
                 <div>
-                  <p><strong>Order ID:</strong> {order.id}</p>
-                  <p><strong>Status:</strong> {order.status}</p>
+                  <p>
+                    <strong>Order ID:</strong> {order.orderId}
+                  </p>
+                  <p>
+                    <strong>Status:</strong> {order.status}
+                  </p>
 
                   {order.billingDetails && (
                     <p className="address-text">
-                      <strong>Shipping Address:</strong><br />
-                      {order.billingDetails.firstName} {order.billingDetails.lastName}<br />
-                      {order.billingDetails.address1}, {order.billingDetails.city}<br />
-                      {order.billingDetails.state} - {order.billingDetails.pin}<br />
+                      <strong>Shipping Address:</strong>
+                      <br />
+                      {order.billingDetails.firstName}{" "}
+                      {order.billingDetails.lastName}
+                      <br />
+                      {order.billingDetails.address1},{" "}
+                      {order.billingDetails.city}
+                      <br />
+                      {order.billingDetails.state} -{" "}
+                      {order.billingDetails.pin}
+                      <br />
                       Phone: {order.billingDetails.phone}
                     </p>
                   )}
+
                   {order.Note && (
                     <p className="order-note">
                       <strong>Order Note:</strong> {order.Note}
@@ -229,7 +307,9 @@ export default function Orders() {
                 </div>
 
                 <div className="order-date">
-                  {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : "Unknown"}
+                  {order.createdAt?.toDate
+                    ? order.createdAt.toDate().toLocaleString()
+                    : "Unknown"}
                 </div>
               </div>
 
@@ -237,11 +317,19 @@ export default function Orders() {
               <div className="order-items">
                 <strong>Items:</strong>
                 {(order.items || []).map((item, i) => (
-                  <div key={i} className="order-item" onClick={() => setPopupImage(item.image)}>
-                    <img src={item.image} alt={item.name} className="order-img" />
+                  <div
+                    key={i}
+                    className="order-item"
+                    onClick={() => setPopupImage(item.image)}
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="order-img"
+                    />
                     <div>
-                      {item.name} × {item.qty || 1}<br />
-                      ₹{item.price}
+                      {item.name} × {item.qty || 1}
+                      <br />₹{item.price}
                     </div>
                   </div>
                 ))}
@@ -252,39 +340,56 @@ export default function Orders() {
                 <strong>Total:</strong> ₹{order.totalPrice}
               </div>
               <div className="order-section">
-                <strong>Payment ID:</strong> {order.paymentId || "Pending"}
+                <strong>Payment ID:</strong>{" "}
+                {order.paymentId || "Pending"}
               </div>
 
-              {/* CANCEL BUTTON + INFO MESSAGE */}
+              {/* CANCEL */}
               {order.status === "Cancelled" ? (
                 <p className="cancel-msg">
-                  Your order has been successfully cancelled. The refund will be processed to your original payment method within 2-3 working days.
+                  Your order has been successfully cancelled. The
+                  refund will be processed to your original payment
+                  method within 2-3 working days.
                 </p>
               ) : (
                 <>
-                  {/* Info message */}
-                  {["Pending", "Processing", "Unshipped"].includes(order.status) && (
-                    <p className="cancel-msg info">
-                      You can cancel your order before it is shipped.No exchanges, returns, or refunds are accepted once the product is shipped.
-                    </p>
-                  )}
-                  {["Shipped"].includes(order.status) && (
+                  {["Pending", "Processing", "Unshipped"].includes(
+                    order.status
+                  ) && (
+                      <p className="cancel-msg info">
+                        You can cancel your order before it is shipped.
+                        No exchanges, returns, or refunds are accepted
+                        once the product is shipped.
+                      </p>
+                    )}
+
+                  {order.status === "Shipped" && (
                     <p className="cancel-msgg info">
-                      Your order has been shipped successfully and will reach you soon.
+                      Your order has been shipped successfully and
+                      will reach you soon.
                     </p>
                   )}
-                  {["Delivered"].includes(order.status) && (
+
+                  {order.status === "Delivered" && (
                     <p className="cancel-msgg info">
-                      Your order has been delivered. Thank you for shopping with us!
+                      Your order has been delivered. Thank you for
+                      shopping with us!
                     </p>
                   )}
-                  {/* Cancel button */}
+
                   <button
-                    className={`order-cancel-btn ${["Shipped", "Delivered"].includes(order.status) ? "disabled" : ""}`}
+                    className={`order-cancel-btn ${["Shipped", "Delivered"].includes(order.status)
+                      ? "disabled"
+                      : ""
+                      }`}
                     onClick={() => askCancelOrder(order.id)}
-                    disabled={["Shipped", "Delivered"].includes(order.status)}
+                    disabled={["Shipped", "Delivered"].includes(
+                      order.status
+                    )}
                   >
-                    {["Shipped", "Delivered"].includes(order.status) ? "Cannot Cancel" : "Cancel Order"}
+                    {["Shipped", "Delivered"].includes(order.status)
+                      ? "Cannot Cancel"
+                      : "Cancel Order"}
                   </button>
                 </>
               )}
@@ -294,18 +399,22 @@ export default function Orders() {
                 <div className="track-box">
                   <h4>Track Status</h4>
                   <div className="track-status-container">
-                    {["Ordered", "Processing", "Shipped", "Delivered"].map((step) => (
-                      <div
-                        key={step}
-                        className={`track-step ${isStepActive(order.status, step) ? "active" : ""}`}
-                      >
-                        {step}
-                      </div>
-                    ))}
+                    {["Ordered", "Processing", "Shipped", "Delivered"].map(
+                      (step) => (
+                        <div
+                          key={step}
+                          className={`track-step ${isStepActive(order.status, step)
+                            ? "active"
+                            : ""
+                            }`}
+                        >
+                          {step}
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
               )}
-
             </div>
           ))}
         </div>

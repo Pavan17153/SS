@@ -14,6 +14,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import "./adminOrders.css";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import { generateInvoicePDF } from "./generateInvoicePDF";
+import { sendOrderStatusEmail } from "./sendOrderStatusEmail";
 
 function toMillis(createdAt) {
   if (!createdAt) return 0;
@@ -44,7 +48,11 @@ export default function AdminOrders() {
       try {
         const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
-        const ordersData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const ordersData = snap.docs.map((d) => ({
+          docId: d.id,
+          ...d.data()
+        }));
+
 
         const pSnap = await getDocs(collection(db, "products"));
         setProductsCount(pSnap.size);
@@ -63,7 +71,13 @@ export default function AdminOrders() {
     try {
       const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
       const snap = await getDocs(q);
-      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setOrders(
+        snap.docs.map((d) => ({
+          docId: d.id,
+          ...d.data()
+        }))
+      );
+
     } catch (err) {
       console.error("Error refreshing orders:", err);
     }
@@ -75,15 +89,26 @@ export default function AdminOrders() {
     if (order.status === "Cancelled") return;
     const newStatus = order.status === "shipped" ? "unshipped" : "shipped";
     setOrders((prev) =>
-      prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
+      prev.map((o) => (o.docId === order.docId ? { ...o, status: newStatus } : o))
     );
     try {
-      await updateDoc(doc(db, "orders", order.id), { status: newStatus });
+      await updateDoc(doc(db, "orders", order.docId), { status: newStatus });
+      await sendOrderStatusEmail({
+        email: order.customerEmail,
+        orderId: order.orderId,
+        paymentId: order.paymentId,
+        amount: order.totalPrice,
+        name: order.billingDetails?.firstName || "Customer",
+        items: order.items,
+        shippingAddress: order.billingDetails,
+        statusType: "shipped",
+      });
+
     } catch (err) {
       console.error("Error updating shipped status:", err);
       alert("Could not update shipped status.");
       setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, status: order.status } : o))
+        prev.map((o) => (o.docId === order.docId ? { ...o, status: order.status } : o))
       );
     }
   };
@@ -93,15 +118,26 @@ export default function AdminOrders() {
     if (order.status === "Cancelled") return;
     const newStatus = order.status === "delivered" ? "unshipped" : "delivered";
     setOrders((prev) =>
-      prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
+      prev.map((o) => (o.docId === order.docId ? { ...o, status: newStatus } : o))
     );
     try {
-      await updateDoc(doc(db, "orders", order.id), { status: newStatus });
+      await updateDoc(doc(db, "orders", order.docId), { status: newStatus });
+      await sendOrderStatusEmail({
+        email: order.customerEmail,
+        orderId: order.orderId,
+        paymentId: order.paymentId,
+        amount: order.totalPrice,
+        name: order.billingDetails?.firstName || "Customer",
+        items: order.items,
+        shippingAddress: order.billingDetails,
+        statusType: "delivered",
+      });
+
     } catch (err) {
       console.error("Error updating delivered status:", err);
       alert("Could not update delivered status.");
       setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, status: order.status } : o))
+        prev.map((o) => (o.docId === order.docId ? { ...o, status: order.status } : o))
       );
     }
   };
@@ -110,7 +146,7 @@ export default function AdminOrders() {
     if (!window.confirm("Delete this order permanently?")) return;
     try {
       await deleteDoc(doc(db, "orders", orderId));
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      setOrders((prev) => prev.filter((o) => o.docId !== orderId));
     } catch (err) {
       console.error("Delete order error:", err);
       alert("Could not delete order.");
@@ -121,7 +157,7 @@ export default function AdminOrders() {
     if (!window.confirm("DELETE ALL ORDERS permanently? This cannot be undone.")) return;
     try {
       for (const o of orders) {
-        await deleteDoc(doc(db, "orders", o.id));
+        await deleteDoc(doc(db, "orders", o.docId));
       }
       setOrders([]);
       alert("All orders deleted.");
@@ -154,7 +190,8 @@ export default function AdminOrders() {
       if (createdMs < fromMs || createdMs > toMs) return false;
       if (!s) return true;
 
-      if ((o.id || "").toLowerCase().includes(s)) return true;
+      if ((o.orderId || "").toLowerCase().includes(s)) return true;
+
       if ((o.customerEmail || "").toLowerCase().includes(s)) return true;
       if ((o.customerPhone || "").toLowerCase().includes(s)) return true;
 
@@ -193,7 +230,7 @@ export default function AdminOrders() {
       if (Array.isArray(o.items) && o.items.length > 0) {
         o.items.forEach((it) => {
           rows.push([
-            o.id,
+            o.orderId,
             o.customerEmail || "",
             o.customerPhone || "",
             o.status || "",
@@ -208,7 +245,7 @@ export default function AdminOrders() {
           ]);
         });
       } else {
-        rows.push([o.id, o.customerEmail || "", o.customerPhone || "", o.status || "", o.totalPrice || "", created, "", "", "", "", "", ""]);
+        rows.push([o.orderId, o.customerEmail || "", o.customerPhone || "", o.status || "", o.totalPrice || "", created, "", "", "", "", "", ""]);
       }
     });
 
@@ -223,6 +260,34 @@ export default function AdminOrders() {
     document.body.appendChild(link);
     link.click();
     link.remove();
+  };
+  const downloadAllInvoices = async () => {
+    if (!orders.length) {
+      alert("No orders available");
+      return;
+    }
+
+    const zip = new JSZip();
+
+    for (const order of orders) {
+      if (order.status !== "shipped" && order.status !== "delivered") continue;
+
+      try {
+        const doc = await generateInvoicePDF(order, "blob");
+        const blob = doc.output("blob");
+
+        const invoiceNo =
+          order.invoiceNo ||
+          `INV-${String(order.invoiceSeq || order.orderId).slice(-6)}`;
+
+        zip.file(`${invoiceNo}.pdf`, blob);
+      } catch (err) {
+        console.error("Invoice error:", err);
+      }
+    }
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    saveAs(zipBlob, `SS_Fashion_Invoices_${Date.now()}.zip`);
   };
 
   // Print shipped orders
@@ -251,7 +316,7 @@ export default function AdminOrders() {
       const created = new Date(toMillis(o.createdAt)).toLocaleString();
       return `
               <section style="margin-bottom:22px;">
-                <h2 style="margin:0 0 8px 0;">Order: ${o.id} — ₹${o.totalPrice || 0}</h2>
+                <h2 style="margin:0 0 8px 0;">Order: ${o.orderId} — ₹${o.totalPrice || 0}</h2>
                 <div>Customer: ${o.customerEmail || ""} | Phone: ${o.customerPhone || ""} | Created: ${created}</div>
                 <table>
                   <thead>
@@ -299,9 +364,16 @@ export default function AdminOrders() {
     if (!editData || !selectedOrder) return;
     try {
       const toSave = { ...editData };
-      await updateDoc(doc(db, "orders", selectedOrder.id), toSave);
-      setOrders((prev) => prev.map((o) => (o.id === selectedOrder.id ? toSave : o)));
-      setSelectedOrder(toSave);
+
+      await updateDoc(doc(db, "orders", selectedOrder.docId), toSave);
+
+      const updated = { ...toSave, docId: selectedOrder.docId };
+
+      setOrders((prev) =>
+        prev.map((o) => (o.docId === selectedOrder.docId ? updated : o))
+      );
+      setSelectedOrder(updated);
+
       setEditMode(false);
       alert("Order updated successfully.");
     } catch (err) {
@@ -312,23 +384,40 @@ export default function AdminOrders() {
 
   // Handle Cancelled button click
   const handleCancelledClick = async (order) => {
+    if (order.adminCancelled) return; // ⛔ already clicked
+
     try {
-      // Save order details to new collection 'cancelledPayments'
-      await setDoc(doc(db, "cancelledPayments", order.id), {
-        orderId: order.id,
+      // Save to cancelledPayments
+      await setDoc(doc(db, "cancelledPayments", order.docId), {
+        orderId: order.orderId,
         paymentId: order.paymentId || "Not Available",
         totalPrice: order.totalPrice || 0,
-        subCategory: order.subCategory || 0,
+        subCategory: order.subCategory || "",
         createdAt: order.createdAt || null,
       });
 
+      // Mark order as adminCancelled (ONE-TIME)
+      await updateDoc(doc(db, "orders", order.docId), {
+        adminCancelled: true,
+      });
+
+      // Update UI state
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.docId === order.docId
+            ? { ...o, adminCancelled: true }
+            : o
+        )
+      );
+
       alert("Order sent to Cancelled Payments page.");
-      navigate("/payments"); // redirect to Payments page
+      navigate("/payments");
     } catch (err) {
       console.error("Error saving to cancelledPayments:", err);
       alert("Could not move order to payments page.");
     }
   };
+
 
   if (loading) return <p>Loading orders...</p>;
 
@@ -344,6 +433,13 @@ export default function AdminOrders() {
         <button onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}>Reset</button>
         <button onClick={exportCSV}>Export CSV</button>
         <button onClick={printShippedOrders}>Print (Shipped Only)</button>
+        <button
+          onClick={downloadAllInvoices}
+          style={{ background: "#0047ab", color: "white" }}
+        >
+          Download All Invoices (ZIP)
+        </button>
+
         <button onClick={deleteAllOrders} style={{ background: "red", color: "white" }}>Delete All Orders</button>
       </div>
 
@@ -376,12 +472,12 @@ export default function AdminOrders() {
         </thead>
         <tbody>
           {filteredOrders.map((o) => (
-            <tr key={o.id} className={
+            <tr key={o.docId} className={
               o.status === "Cancelled" ? "cancelled-row" :
                 o.status === "shipped" ? "shipped-row" :
                   o.status === "delivered" ? "delivered-row" : ""
             }>
-              <td style={{ wordBreak: 'break-all' }}>{o.id}</td>
+              <td style={{ wordBreak: 'break-all' }}>{o.orderId}</td>
               <td>{o.customerEmail}</td>
               <td>{o.customerPhone}</td>
 
@@ -406,10 +502,21 @@ export default function AdminOrders() {
               {/* Cancelled button */}
               <td>
                 {o.status === "Cancelled" && (
-                  <button className="status-btn" style={{ background: "red", color: "#fff" }} onClick={() => handleCancelledClick(o)}>
+                  <button
+                    className="status-btn"
+                    disabled={o.adminCancelled}
+                    onClick={() => handleCancelledClick(o)}
+                    style={{
+                      background: o.adminCancelled ? "#fff" : "red",
+                      color: o.adminCancelled ? "#333" : "#fff",
+                      border: "1px solid red",
+                      cursor: o.adminCancelled ? "not-allowed" : "pointer",
+                    }}
+                  >
                     Cancelled
                   </button>
                 )}
+
               </td>
 
               <td>₹{o.totalPrice || 0}</td>
@@ -431,7 +538,7 @@ export default function AdminOrders() {
               </td>
 
               <td><button className="view-btn" onClick={() => openViewModal(o)}>View</button></td>
-              <td><button className="delete-btn" onClick={() => deleteOrder(o.id)}>Delete</button></td>
+              <td><button className="delete-btn" onClick={() => deleteOrder(o.docId)}>Delete</button></td>
             </tr>
           ))}
         </tbody>
@@ -446,7 +553,7 @@ export default function AdminOrders() {
             {!editMode ? (
               <>
                 <h2>Order Details</h2>
-                <p><strong>Order ID:</strong> {selectedOrder.id}</p>
+                <p><strong>Order ID:</strong> {selectedOrder.orderId}</p>
                 <p><strong>Payment ID:</strong> {selectedOrder.paymentId || "Not Available"}</p>
                 <p>
                   <span className="label">Order Note:</span>
@@ -454,8 +561,10 @@ export default function AdminOrders() {
                 </p>
                 <h3>Items</h3>
                 <ul>
-                  {selectedOrder.items?.map((it, i) => (
-                    <li key={i}>{it.name} — Qty: {it.qty} — ₹{it.price}</li>
+                  {(selectedOrder.items || []).map((it, i) => (
+                    <li key={i}>
+                      <strong>Category : </strong>{it.category || "—"} {it.subCategory ? ` / ${it.subCategory}` : ""}——<strong>{it.name}</strong> —— Qty: {it.qty || 1} —— ₹{it.price || 0}
+                    </li>
                   ))}
                 </ul>
                 <p><strong>Total:</strong> ₹{selectedOrder.totalPrice}</p>
@@ -466,24 +575,34 @@ export default function AdminOrders() {
                 <p>{selectedOrder.billingDetails?.address1}</p>
                 <p>{selectedOrder.billingDetails?.address2}</p>
                 <p>{selectedOrder.billingDetails?.city}, {selectedOrder.billingDetails?.state} - {selectedOrder.billingDetails?.pin}</p>
-                <p>Phone: {selectedOrder.billingDetails?.phone}</p>
-                <p>Email: {selectedOrder.billingDetails?.email}</p>
+                <h3>Phone:</h3> <p>{selectedOrder.billingDetails?.phone}</p>
+                <h3>Email:</h3><p>{selectedOrder.billingDetails?.email}</p>
 
-                <h3>Items</h3>
-                <ul>
-                  {(selectedOrder.items || []).map((it, i) => (
-                    <li key={i}>
-                      <strong>{it.name}</strong> — Qty: {it.qty || 1} — ₹{it.price || 0} — Category: {it.category || "—"} {it.subCategory ? ` / ${it.subCategory}` : ""}
-                    </li>
-                  ))}
-                </ul>
 
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <button
+                    className="print-btn"
+                    style={{ background: "#2d8f2d" }}
+                    onClick={async () => {
+                      if (
+                        selectedOrder.status !== "shipped" &&
+                        selectedOrder.status !== "delivered"
+                      ) {
+                        alert("Invoice can be generated only after order is shipped or delivered.");
+                        return;
+                      }
+                      await generateInvoicePDF(selectedOrder);
+                    }}
+                  >
+                    Download Invoice (PDF)
+                  </button>
+
+
                   <button className="print-btn" onClick={() => {
                     if (selectedOrder.status !== "shipped") { alert("Only shipped orders can be printed."); return; }
                     const o = selectedOrder;
                     const created = new Date(toMillis(o.createdAt)).toLocaleString();
-                    const html = `<html><head><title>Order ${o.id}</title><style>body{font-family:Arial;padding:20px}h1{margin:0 0 8px 0}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#333;color:#fff}</style></head><body><h1>Order: ${o.id}</h1><div>Customer: ${o.customerEmail || ""} | Phone: ${o.customerPhone || ""} | Created: ${created}</div><h3>Billing</h3><div>${o.billingDetails?.firstName || ""} ${o.billingDetails?.lastName || ""}</div><div>${o.billingDetails?.address1 || ""} ${o.billingDetails?.address2 || ""}</div><div>${o.billingDetails?.city || ""}, ${o.billingDetails?.state || ""} - ${o.billingDetails?.pin || ""}</div><h3>Items</h3><table><thead><tr><th>Item</th><th>Category</th><th>Qty</th><th>Price</th></tr></thead><tbody>${(o.items || []).map(it => `<tr><td>${it.name || ""}</td><td>${it.category || ""} ${it.subCategory ? ` / ${it.subCategory}` : ""}</td><td>${it.qty || 1}</td><td>₹${it.price || 0}</td></tr>`).join("")}</tbody></table></body></html>`;
+                    const html = `<html><head><title>Order ${o.orderId}</title><style>body{font-family:Arial;padding:20px}h1{margin:0 0 8px 0}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#333;color:#fff}</style></head><body><h1>Order: ${o.orderId}</h1><div>Customer: ${o.customerEmail || ""} | Phone: ${o.customerPhone || ""} | Created: ${created}</div><h3>Billing</h3><div>${o.billingDetails?.firstName || ""} ${o.billingDetails?.lastName || ""}</div><div>${o.billingDetails?.address1 || ""} ${o.billingDetails?.address2 || ""}</div><div>${o.billingDetails?.city || ""}, ${o.billingDetails?.state || ""} - ${o.billingDetails?.pin || ""}</div><h3>Items</h3><table><thead><tr><th>Item</th><th>Category</th><th>Qty</th><th>Price</th></tr></thead><tbody>${(o.items || []).map(it => `<tr><td>${it.name || ""}</td><td>${it.category || ""} ${it.subCategory ? ` / ${it.subCategory}` : ""}</td><td>${it.qty || 1}</td><td>₹${it.price || 0}</td></tr>`).join("")}</tbody></table></body></html>`;
                     const w = window.open("", "_blank");
                     w.document.write(html);
                     w.document.close();

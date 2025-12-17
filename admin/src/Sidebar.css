@@ -68,3 +68,16 @@
   margin-top: 80px;
   padding: 20px;
 }
+
+.logout {
+  color: white;
+  margin-right: 50px;
+}
+
+.logout:hover {
+  color: red;
+  cursor: pointer;
+  background: #2c3a4b;
+  padding: 5px 5px;
+  border-radius: 5px;
+}

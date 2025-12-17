@@ -50,10 +50,16 @@ export default function Cart() {
     }
 
     // Map default values
+    // const fixed = stored.map((item) => ({
+    //   ...item,
+    //   qty: item.qty ? item.qty : 1,
+    //   stockQty: item.stockQty !== undefined ? item.stockQty : 5,
+    // }));
     const fixed = stored.map((item) => ({
       ...item,
       qty: item.qty ? item.qty : 1,
       stockQty: item.stockQty !== undefined ? item.stockQty : 5,
+      category: item.category || "unknown",
     }));
 
     setCart(fixed);
@@ -64,7 +70,12 @@ export default function Cart() {
         try {
           const docSnap = await getDoc(doc(db, "products", item.id));
           if (docSnap.exists()) {
-            return { ...item, stockQty: docSnap.data().stockQty || 0 };
+            return {
+              ...item,
+              stockQty: docSnap.data().stockQty || 0,
+              category: item.category || docSnap.data().category || "unknown",
+            };
+
           }
           return item;
         } catch {

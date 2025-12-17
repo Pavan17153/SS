@@ -26,7 +26,9 @@ import EmailExistPopup from "./EmailExistPopup";
 import LoginPopup from "./LoginPopup";
 import "../Checkout.css";
 import "./PopupStyles.css";
-
+import { getNextInvoiceNumber } from "./getNextInvoiceNumber";
+import { getNextOrderId } from "./getNextOrderId";
+import { sendOrderStatusEmail } from "./notify";
 const INDIA_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
   "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
@@ -333,7 +335,36 @@ export default function Checkout() {
         // Save order (returns orderId)
         let orderId;
         try {
-          orderId = await saveOrderToFirestore(orderEmail, paymentId);
+          const savedOrder = await saveOrderToFirestore(orderEmail, paymentId);
+          orderId = savedOrder.orderId; // SSF-0012
+          await sendOrderStatusEmail({
+            email: form.email,
+            orderId,
+            paymentId,
+            amount: grandTotal,
+            name: `${form.firstName} ${form.lastName}`,
+            shippingAddress: {
+              address1: form.address1,
+              address2: form.address2,
+              city: form.city,
+              state: form.state,
+              pin: form.pin,
+              phone: form.phone,
+            },
+            items: cart.map((item) => ({
+              name: item.name,
+              qty: item.qty || 1,
+              price: item.price,
+            })),
+            statusType: "Placed",
+          });
+          await addDoc(collection(db, "adminNotifications"), {
+            title: "New Order Received",
+            message: `Order placed by ${orderEmail}`,
+            read: false,
+            createdAt: Timestamp.now(),
+          });
+
         } catch (err) {
           console.error("saveOrderToFirestore error:", err);
           if (err?.code === "permission-denied") {
@@ -490,18 +521,47 @@ export default function Checkout() {
       throw e;
     }
 
-    const itemsForDb = cart.map((item) => ({
-      name: item.name,
-      price: item.price,
-      qty: item.qty || 1,
-      image: item.image || "",
-      category: item.category || "",
-      subCategory: item.subCategory || "",
-      productId: item.productId || "",
-      orderNotes: item.orderNotes || "",
-    }));
+
+    const itemsForDb = await Promise.all(
+      cart.map(async (item) => {
+        let category = item.category || "";
+        let subCategory = item.subCategory || "";
+
+        // 🔒 SAFETY NET: fetch from products if missing
+        if ((!category || !subCategory) && (item.productId || item.id)) {
+          try {
+            const pid = item.productId || item.id;
+            const snap = await getDoc(doc(db, "products", pid));
+            if (snap.exists()) {
+              const p = snap.data();
+              category = category || p.category || "";
+              subCategory = subCategory || p.subCategory || "";
+            }
+          } catch (e) {
+            console.warn("Category fetch fallback failed", e);
+          }
+        }
+
+        return {
+          name: item.name,
+          price: item.price,
+          qty: item.qty || 1,
+          image: item.image || "",
+          category,          // ✅ GUARANTEED
+          subCategory,       // ✅ GUARANTEED
+          productId: item.productId || item.id || "",
+          orderNotes: item.orderNotes || "",
+        };
+      })
+    );
+    // 🔢 Generate invoice number (atomic & safe)
+    const orderId = await getNextOrderId();
+    const invoiceNo = await getNextInvoiceNumber();
+
 
     const ref = await addDoc(collection(db, "orders"), {
+      orderId,
+      invoiceNo,
       customerEmail: orderEmail,
       customerPhone: form.phone,
       billingDetails: { ...form },
@@ -514,7 +574,7 @@ export default function Checkout() {
       createdAt: Timestamp.now(),
       createdBy: currentUser.email,
     });
-    return ref.id;
+    return { docId: ref.id, orderId };
   };
 
   const openLoginFromExistPopup = (email) => {

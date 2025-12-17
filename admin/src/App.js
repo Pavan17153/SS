@@ -31,20 +31,36 @@ import AdminTerms from "./pages/AdminTerms";
 import ProductAdmin from "./pages/Products";
 import ProductList from "./pages/ProductList";
 
+import AdminRevenueAnalytics from "./pages/AdminRevenueAnalytics";
 // Coupons
 import Coupons from "./pages/Coupons";
 
 /* ------------------ Layout ------------------ */
-function Layout({ children }) {
+function Layout() {
   const location = useLocation();
-
-  // Hide sidebar only on login page
   const hideSidebar = location.pathname === "/login";
 
   return (
     <div className="admin-layout">
       {!hideSidebar && <Sidebar />}
-      <div className="content">{children}</div>
+      <div className="content">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/payments" element={<Payments />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/shipping" element={<Shipping />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/faq" element={<Faq />} />
+          <Route path="/coupons" element={<Coupons />} />
+          <Route path="/add-product" element={<ProductAdmin />} />
+          <Route path="/product-list" element={<ProductList />} />
+          <Route path="/revenue" element={<AdminRevenueAnalytics />} />
+        </Routes>
+      </div>
     </div>
   );
 }
@@ -96,31 +112,14 @@ export default function App() {
           }
         />
 
-        {/* ✅ Admin Terms must be PUBLIC */}
         <Route path="/adminterms" element={<AdminTerms />} />
 
-        {/* -------- PROTECTED ADMIN ROUTES -------- */}
+        {/* -------- PROTECTED ROUTES -------- */}
         <Route
           path="/*"
           element={
             <ProtectedRoute user={user}>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/categories" element={<Categories />} />
-                  <Route path="/orders" element={<Orders />} />
-                  <Route path="/payments" element={<Payments />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/shipping" element={<Shipping />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/faq" element={<Faq />} />
-                  <Route path="/coupons" element={<Coupons />} />
-                  <Route path="/add-product" element={<ProductAdmin />} />
-                  <Route path="/product-list" element={<ProductList />} />
-                </Routes>
-              </Layout>
+              <Layout />
             </ProtectedRoute>
           }
         />

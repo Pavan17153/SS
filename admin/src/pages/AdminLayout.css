@@ -1,0 +1,21 @@
+.admin-layout {
+    min-height: 100vh;
+    background: #f6f6f6;
+}
+
+.admin-header {
+    height: 60px;
+    background: #111;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.admin-content {
+    padding: 20px;
+}

@@ -1,0 +1,152 @@
+/* ===============================
+   PAGE WRAPPER
+   =============================== */
+.admin-analytics {
+    background: #eaeded;
+    /* Amazon-like light gray */
+    padding: 24px 28px;
+    min-height: 100vh;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.admin-analytics h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: #0f1111;
+}
+
+/* ===============================
+   FILTER BAR
+   =============================== */
+.filter-bar {
+    background: #ffffff;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.filter-bar label {
+    font-size: 12px;
+    color: #565959;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.filter-bar input {
+    padding: 7px 10px;
+    border-radius: 4px;
+    border: 1px solid #d5d9d9;
+    font-size: 13px;
+}
+
+.filter-bar input:focus {
+    outline: none;
+    border-color: #007185;
+    box-shadow: 0 0 0 2px rgba(0, 113, 133, 0.15);
+}
+
+/* ===============================
+   KPI GRID
+   =============================== */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+/* ===============================
+   KPI CARD
+   =============================== */
+.analytics-card {
+    background: #ffffff;
+    padding: 18px 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(15, 17, 17, 0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(15, 17, 17, 0.18);
+}
+
+.analytics-card h4 {
+    font-size: 13px;
+    font-weight: 500;
+    color: #565959;
+    margin-bottom: 8px;
+}
+
+.analytics-card p {
+    font-size: 22px;
+    font-weight: 600;
+    color: #0f1111;
+}
+
+/* PROFIT HIGHLIGHT */
+.analytics-card.profit {
+    border-left: 5px solid #067d62;
+    /* Amazon green */
+    background: linear-gradient(180deg, #ffffff, #f3fbf9);
+}
+
+/* ===============================
+   BIG CHART CARDS
+   =============================== */
+.analytics-card.big {
+    margin-bottom: 26px;
+    padding: 20px 22px;
+}
+
+.analytics-card.big h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: #0f1111;
+    border-bottom: 1px solid #e7e7e7;
+    padding-bottom: 8px;
+}
+
+/* ===============================
+   CHART TOOLTIP FIX (Recharts)
+   =============================== */
+.recharts-tooltip-wrapper {
+    font-size: 12px;
+}
+
+.recharts-default-tooltip {
+    background-color: #ffffff !important;
+    border: 1px solid #d5d9d9 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* ===============================
+   CENTER LOADER
+   =============================== */
+.admin-center {
+    text-align: center;
+    padding: 80px;
+    font-size: 15px;
+    color: #565959;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+@media (max-width: 768px) {
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .analytics-card.big {
+        padding: 16px;
+    }
+}

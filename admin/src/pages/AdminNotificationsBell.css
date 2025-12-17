@@ -1,0 +1,174 @@
+.admin-bell-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Bell Icon */
+.bell-icon {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: #555;
+    box-shadow: 0 2px 8px rgba(255, 46, 99, 0.15);
+    transition: all 0.25s ease;
+}
+
+.bell-icon:hover {
+    background: #ffedf3;
+    color: #ff2e63;
+    transform: scale(1.05);
+}
+
+/* Notification Count */
+.bell-count {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #ff2e63;
+    color: #fff;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 6px rgba(255, 46, 99, 0.3);
+}
+
+/* Dropdown */
+.bell-dropdown {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    width: 280px;
+    max-height: 400px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+    z-index: 3000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: bellFade 0.25s ease;
+}
+
+@keyframes bellFade {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Sound Controls */
+.bell-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fff0f4;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.bell-controls button {
+    border: none;
+    background: #ffffff;
+    color: #ff2e63;
+    font-size: 16px;
+    cursor: pointer;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(255, 46, 99, 0.2);
+    transition: all 0.2s ease;
+}
+
+.bell-controls button:hover {
+    background: #ff2e63;
+    color: #fff;
+}
+
+.bell-controls input[type="range"] {
+    flex: 1;
+    accent-color: #ff2e63;
+    cursor: pointer;
+}
+
+/* Notification List */
+.bell-list {
+    overflow-y: auto;
+    flex: 1;
+    max-height: 340px;
+    scrollbar-width: thin;
+    scrollbar-color: #ff2e63 #fff;
+}
+
+.bell-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.bell-list::-webkit-scrollbar-thumb {
+    background-color: #ff2e63;
+    border-radius: 3px;
+}
+
+.bell-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f4f4f4;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bell-item:last-child {
+    border-bottom: none;
+}
+
+.bell-item.unread {
+    background: #ffedf3;
+}
+
+.bell-item:hover {
+    background: #fff0f4;
+}
+
+.bell-item strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.bell-item p {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.bell-empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: #777;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .bell-dropdown {
+        width: 240px;
+        max-height: 350px;
+    }
+}

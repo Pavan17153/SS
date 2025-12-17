@@ -180,6 +180,7 @@ export default function CategoriesPage() {
         productId: product.id,
         id: product.id,
         name: product.name,
+        category: product.category,//////////////////////////////////////////////////
         price: product.price,
         qty: 1,
         image: getPrimaryImage(product),
