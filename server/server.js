@@ -5,6 +5,9 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import notifyRoutes from "./notifyRoutes.js";
 
+/* =========================
+   ENV (Render-safe)
+========================= */
 dotenv.config();
 
 const app = express();
@@ -12,27 +15,30 @@ app.use(cors());
 app.use(express.json());
 
 /* =========================
-   RAZORPAY SETUP
+   RAZORPAY CONFIG
 ========================= */
-const isLive = process.env.NODE_ENV === "production";
+const razorpayMode = process.env.RAZORPAY_MODE || "test";
 
-const key_id = isLive
-  ? process.env.RAZORPAY_KEY_ID_LIVE
-  : process.env.RAZORPAY_KEY_ID_TEST;
+const key_id =
+  razorpayMode === "live"
+    ? process.env.RAZORPAY_KEY_ID_LIVE
+    : process.env.RAZORPAY_KEY_ID_TEST;
 
-const key_secret = isLive
-  ? process.env.RAZORPAY_KEY_SECRET_LIVE
-  : process.env.RAZORPAY_KEY_SECRET_TEST;
+const key_secret =
+  razorpayMode === "live"
+    ? process.env.RAZORPAY_KEY_SECRET_LIVE
+    : process.env.RAZORPAY_KEY_SECRET_TEST;
 
-if (!key_id || !key_secret) {
-  console.error("❌ Razorpay keys missing");
-  process.exit(1);
-}
+console.log("🔐 Razorpay Mode:", razorpayMode);
+console.log("🔐 Key Loaded:", !!key_id);
 
-const razorpay = new Razorpay({ key_id, key_secret });
+const razorpay = new Razorpay({
+  key_id,
+  key_secret,
+});
 
 /* =========================
-   TEST ROUTE
+   HEALTH CHECK
 ========================= */
 app.get("/", (req, res) => {
   res.send("✅ SS Fashion Backend Running");
@@ -71,9 +77,14 @@ app.post("/create-order", async (req, res) => {
    VERIFY PAYMENT
 ========================= */
 app.post("/verify-payment", (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+  } = req.body;
 
   const sign = razorpay_order_id + "|" + razorpay_payment_id;
+
   const expected = crypto
     .createHmac("sha256", key_secret)
     .update(sign)
@@ -83,14 +94,14 @@ app.post("/verify-payment", (req, res) => {
 });
 
 /* =========================
-   EMAIL NOTIFICATIONS
+   EMAIL ROUTES
 ========================= */
 app.use("/api", notifyRoutes);
 
 /* =========================
    START SERVER
 ========================= */
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
