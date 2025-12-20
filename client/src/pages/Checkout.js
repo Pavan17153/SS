@@ -272,23 +272,23 @@ export default function Checkout() {
 
   // Reduce stock in Firestore after successful payment
   const reduceStockInFirestore = async () => {
-    for (const item of cart) {
-      const pid = item.productId || item.id;
-      if (!pid) continue;
+    await runTransaction(db, async (tx) => {
+      for (const item of cart) {
+        const pid = item.productId || item.id;
+        if (!pid) continue;
 
-      const productRef = doc(db, "products", pid);
-      const snap = await getDoc(productRef);
-      if (!snap.exists()) continue;
+        const ref = doc(db, "products", pid);
+        const snap = await tx.get(ref);
+        if (!snap.exists()) continue;
 
-      const currentStock = snap.data().stockQty || 0;
-      const reduceBy = item.qty || 0;
-      const newStock = Math.max(currentStock - reduceBy, 0);
+        const currentStock = snap.data().stockQty || 0;
+        const reduceBy = item.qty || 1;
 
-      // update stockQty only (rules allow update of only stockQty)
-      await updateDoc(productRef, {
-        stockQty: newStock,
-      });
-    }
+        tx.update(ref, {
+          stockQty: Math.max(currentStock - reduceBy, 0),
+        });
+      }
+    });
   };
 
   useEffect(() => {
@@ -337,7 +337,7 @@ export default function Checkout() {
         try {
           const savedOrder = await saveOrderToFirestore(orderEmail, paymentId);
           orderId = savedOrder.orderId; // SSF-0012
-          await sendOrderStatusEmail({
+          sendOrderStatusEmail({
             email: form.email,
             orderId,
             paymentId,
@@ -357,7 +357,7 @@ export default function Checkout() {
               price: item.price,
             })),
             statusType: "Placed",
-          });
+          }).catch(err => console.error("Email error:", err));
           await addDoc(collection(db, "adminNotifications"), {
             title: "New Order Received",
             message: `Order placed by ${orderEmail}`,
@@ -419,7 +419,8 @@ export default function Checkout() {
             type: "success",
             text: "Order saved! Redirecting…",
           });
-          setTimeout(() => (window.location.href = "/orders"), 900);
+          window.location.href = "/orders";
+
         }
       } catch (err) {
         console.error("Stock/Order Error:", err);

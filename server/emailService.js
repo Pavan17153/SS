@@ -13,40 +13,25 @@ export const sendOrderStatusEmail = async ({
     port: Number(process.env.EMAIL_PORT),
     secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
+      user: "apikey",
       pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
     },
   });
 
-  const statusMap = {
-    Placed: { title: "Order Confirmed", label: "Placed 🟢" },
-    shipped: { title: "Order Shipped", label: "Shipped 🚚" },
-    delivered: { title: "Order Delivered", label: "Delivered ✅" },
-    Cancelled: { title: "Order Cancelled", label: "Cancelled ❌" },
-  };
-
-  const { title, label } = statusMap[statusType];
+  await transporter.verify();
 
   const html = `
-    <div style="font-family:Arial;padding:20px">
-      <h2>${title}</h2>
-      <p>Hello ${name},</p>
-      <p><b>Order ID:</b> ${orderId}</p>
-      <p><b>Payment ID:</b> ${paymentId || "-"}</p>
-      <p><b>Amount:</b> ₹${amount}</p>
-      <p><b>Status:</b> ${label}</p>
-      <br/>
-      <p>— SS Fashion Team</p>
-    </div>
+    <h2>Order Confirmed</h2>
+    <p>Hello ${name}</p>
+    <p>Order ID: ${orderId}</p>
+    <p>Amount: ₹${amount}</p>
+    <p>Status: ${statusType}</p>
   `;
 
   await transporter.sendMail({
-    from: `"SS Fashion" <${process.env.EMAIL_USER}>`,
+    from: "SS Fashion <no-reply@ssfashion.in>", // IMPORTANT
     to: email,
-    subject: `${title} - ${orderId}`,
+    subject: `Order ${statusType} - ${orderId}`,
     html,
   });
 };

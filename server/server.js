@@ -5,17 +5,14 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import notifyRoutes from "./notifyRoutes.js";
 
-/* =========================
-   ENV (Render-safe)
-========================= */
-dotenv.config();
+dotenv.config({ override: true });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 /* =========================
-   RAZORPAY CONFIG
+   RAZORPAY SETUP (SAFE)
 ========================= */
 const razorpayMode = process.env.RAZORPAY_MODE || "test";
 
@@ -29,13 +26,11 @@ const key_secret =
     ? process.env.RAZORPAY_KEY_SECRET_LIVE
     : process.env.RAZORPAY_KEY_SECRET_TEST;
 
-console.log("🔐 Razorpay Mode:", razorpayMode);
-console.log("🔐 Key Loaded:", !!key_id);
+if (!key_id || !key_secret) {
+  console.warn("⚠️ Razorpay keys not loaded yet");
+}
 
-const razorpay = new Razorpay({
-  key_id,
-  key_secret,
-});
+const razorpay = new Razorpay({ key_id, key_secret });
 
 /* =========================
    HEALTH CHECK
@@ -49,9 +44,7 @@ app.get("/", (req, res) => {
 ========================= */
 app.post("/create-order", async (req, res) => {
   try {
-    let { amount } = req.body;
-    amount = Number(amount);
-
+    const amount = Number(req.body.amount);
     if (!amount || amount <= 0) {
       return res.status(400).json({ success: false });
     }
@@ -68,7 +61,7 @@ app.post("/create-order", async (req, res) => {
       amount: order.amount,
     });
   } catch (err) {
-    console.error("❌ Create order error:", err);
+    console.error("Create order error:", err);
     res.status(500).json({ success: false });
   }
 });
@@ -77,11 +70,8 @@ app.post("/create-order", async (req, res) => {
    VERIFY PAYMENT
 ========================= */
 app.post("/verify-payment", (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-  } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
 
   const sign = razorpay_order_id + "|" + razorpay_payment_id;
 

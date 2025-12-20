@@ -14,6 +14,7 @@ import { FiChevronDown } from "react-icons/fi";
 import { auth } from "../firebase";
 import { cartEvent } from "../pages/cartEvents";
 import "../Navbar.css";
+import logo from "../images/logo.png";
 
 const Navbar = () => {
   const [dropdown, setDropdown] = useState(false);
@@ -120,7 +121,7 @@ const Navbar = () => {
 
       <nav className="navbar">
         <div className="navbar-left" onClick={() => navigate("/")}>
-          <img src="/logo.png" alt="logo" className="logo" />
+          <img src={logo} alt="logo" className="logo" />
           <span className="brand-name">SS Fashion</span>
         </div>
 
