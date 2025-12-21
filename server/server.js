@@ -8,7 +8,20 @@ import notifyRoutes from "./notifyRoutes.js";
 dotenv.config({ override: true });
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://ssfashionladies.in",
+      "https://www.ssfashionladies.in",
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
+
 app.use(express.json());
 
 /* =========================

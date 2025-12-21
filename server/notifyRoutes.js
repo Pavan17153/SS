@@ -8,8 +8,8 @@ router.post("/order-status-email", async (req, res) => {
         await sendOrderStatusEmail(req.body);
         res.json({ success: true });
     } catch (err) {
-        console.error("Email error:", err);
-        res.status(500).json({ success: false });
+        console.error("❌ Email error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
