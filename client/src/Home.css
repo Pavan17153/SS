@@ -377,3 +377,154 @@ body {
     flex-direction: column;
   }
 }
+
+/* ==========================================
+   AMAZON STYLE CONTINUOUS MOBILE BANNER
+========================================== */
+
+.mobile-trending-banner {
+  display: none;
+}
+
+/* MOBILE ONLY */
+@media (max-width: 768px) {
+  .mobile-trending-banner {
+    display: flex;
+    align-items: center;
+    /* ✅ vertical center */
+    width: 100%;
+    height: 40px;
+    margin-top: -48px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #000000, #111111, #000000);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* AMAZON YELLOW LABEL */
+  .banner-label {
+    height: 26px;
+    background: #f3a847;
+    color: #111;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0 10px;
+    margin-left: 8px;
+    border-radius: 4px;
+    z-index: 4;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    /* ✅ text center */
+    gap: 4px;
+    box-shadow: 0 0 8px rgba(243, 168, 71, 0.6);
+  }
+
+  /* ⚡ Lightning animation */
+  .flash {
+    font-size: 14px;
+    animation: flashBlink 1.2s infinite;
+  }
+
+  @keyframes flashBlink {
+    0% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.4;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* MARQUEE WRAPPER */
+  .marquee {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    /* ✅ vertical center */
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    margin-left: 12px;
+  }
+
+  /* CONTINUOUS CONTENT */
+  .marquee-content {
+    display: flex;
+    align-items: center;
+    /* ✅ text center */
+    width: max-content;
+    animation: marqueeLoop 10s linear infinite;
+  }
+
+  /* PAUSE ON TOUCH / HOVER */
+  .mobile-trending-banner:active .marquee-content,
+  .mobile-trending-banner:hover .marquee-content {
+    animation-play-state: paused;
+  }
+
+  /* TEXT ITEMS */
+  .marquee-item {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 22px;
+    letter-spacing: 0.4px;
+    text-transform: capitalize;
+    display: flex;
+    align-items: center;
+    /* ✅ vertical center */
+    height: 40px;
+    /* ✅ fix top shift */
+    line-height: 40px;
+    /* ✅ perfect centering */
+  }
+
+  /* DOT SEPARATOR */
+  .marquee-item::after {
+    content: "•";
+    margin-left: 22px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+  }
+
+  .marquee-item:last-child::after {
+    display: none;
+  }
+
+  /* FADE EDGES */
+  .fade-left,
+  .fade-right {
+    position: absolute;
+    top: 0;
+    width: 44px;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .fade-left {
+    left: 0;
+    background: linear-gradient(to right, #000 70%, transparent);
+  }
+
+  .fade-right {
+    right: 0;
+    background: linear-gradient(to left, #000 70%, transparent);
+  }
+
+  /* TRUE CONTINUOUS LOOP (NO BLANK) */
+  @keyframes marqueeLoop {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}

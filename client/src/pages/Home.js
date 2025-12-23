@@ -39,16 +39,14 @@ const Home = () => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
     }, 3000);
-
     return () => clearInterval(interval);
   }, [images.length]);
 
   /* TRENDING ANIMATION */
   useEffect(() => {
     if (!trending.length) return;
-
     const cards = trendingRef.current?.querySelectorAll(".trend-card");
-    if (!cards || !cards.length) return;
+    if (!cards) return;
 
     const obs = new IntersectionObserver(
       (entries) => {
@@ -73,6 +71,36 @@ const Home = () => {
 
   return (
     <div className="home-container">
+
+      {/* ✅ AMAZON-STYLE MOBILE TRENDING AD */}
+      {/* ✅ AMAZON-STYLE MOBILE TRENDING AD */}
+      {!loading && trending.length > 0 && (
+        <div
+          className="mobile-trending-banner"
+          style={{ "--items": trending.length }}
+        >
+          <span className="banner-label">
+            <span className="flash">⚡</span>
+            Today Trending
+          </span>
+
+          <div className="marquee">
+            <div className="marquee-content">
+              {[...trending, ...trending].map((t, i) => (
+                <span key={i} className="marquee-item">
+                  {t.name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Gradient fade edges */}
+          <span className="fade-left"></span>
+          <span className="fade-right"></span>
+        </div>
+      )}
+
+
       {/* SHOW LOADING */}
       {loading || !homeData ? (
         <p style={{ textAlign: "center", padding: 30 }}>Loading...</p>
@@ -86,24 +114,17 @@ const Home = () => {
             </button>
           </div>
 
-          <div className="slider" aria-roledescription="carousel">
-            <FiChevronLeft className="arrow left" onClick={prev} aria-label="Previous slide" />
-            {/* Render all images but only the active one has .active so it fades in */}
-            {images.length ? (
-              images.map((src, idx) => (
-                <img
-                  key={idx}
-                  src={src}
-                  alt={`slide ${idx + 1}`}
-                  className={`slide-img ${idx === currentIndex ? "active" : ""}`}
-                  // for better performance, let browser know offscreen images still load
-                  loading={idx === currentIndex ? "eager" : "lazy"}
-                />
-              ))
-            ) : (
-              <div style={{ width: "100%", height: "100%", borderRadius: 12.5, background: "#f2f2f2" }} />
-            )}
-            <FiChevronRight className="arrow right" onClick={next} aria-label="Next slide" />
+          <div className="slider">
+            <FiChevronLeft className="arrow left" onClick={prev} />
+            {images.map((src, idx) => (
+              <img
+                key={idx}
+                src={src}
+                alt=""
+                className={`slide-img ${idx === currentIndex ? "active" : ""}`}
+              />
+            ))}
+            <FiChevronRight className="arrow right" onClick={next} />
           </div>
 
           <div className="trending">
@@ -118,29 +139,24 @@ const Home = () => {
               ))}
             </div>
 
-            <button
-              className="trending-btn"
-              onClick={() => navigate("/categories")}
-            >
+            <button className="trending-btn" onClick={() => navigate("/categories")}>
               Shop Now
             </button>
           </div>
+
           <div className="features-container">
             <div className="feature-box">
               <h3>Awesome Collections</h3>
               <p>Hand picked great collection.</p>
             </div>
-
             <div className="feature-box">
               <h3>Best Quality</h3>
               <p>You get the best quality you deserve.</p>
             </div>
-
             <div className="feature-box">
               <h3>Best Offers</h3>
               <p>Great designs at low price.</p>
             </div>
-
             <div className="feature-box">
               <h3>Secure Payments</h3>
               <p>Your payments are secured by Razorpay.</p>
