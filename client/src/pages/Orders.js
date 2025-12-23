@@ -127,12 +127,6 @@ export default function Orders() {
       setSuccessPopup(true);
       setTimeout(() => setSuccessPopup(false), 2500);
 
-      // ✅ CANCEL EMAIL (NOW WORKS)
-      await sendOrderCancelledEmail({
-        email: order.customerEmail,
-        orderId: order.orderId,
-      });
-
     } catch (err) {
       console.error(err);
       alert("Failed to cancel order.");

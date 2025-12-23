@@ -10,6 +10,7 @@ export default function AdminHome() {
   const [content, setContent] = useState({
     title: "",
     subtitle: "",
+    bannerText: "",
     sliderImages: [],
     trending: []
   });
@@ -29,6 +30,7 @@ export default function AdminHome() {
           const defaultData = {
             title: "Welcome to SS Fashion",
             subtitle: "Where tradition meets modern elegance.",
+            bannerText: "",
             sliderImages: [],
             trending: []
           };
@@ -152,6 +154,18 @@ export default function AdminHome() {
         onChange={(e) => setContent({ ...content, subtitle: e.target.value })}
         className="input-box"
       />
+      <label>Mobile Banner Text (Optional)</label>
+      <input
+        value={content.bannerText || ""}
+        onChange={(e) =>
+          setContent({ ...content, bannerText: e.target.value })
+        }
+        className="input-box"
+        placeholder="Example: Mega Festive Offers | Free Shipping Today"
+      />
+      <p style={{ fontSize: 12, color: "#666", marginTop: -6 }}>
+        Leave empty to automatically show "Today Trending"
+      </p>
 
       {/* SLIDER IMAGES */}
       <h3 style={{ marginTop: 20 }}>Slider Images</h3>

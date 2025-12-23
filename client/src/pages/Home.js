@@ -5,57 +5,88 @@ import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 
+const DEFAULT_HOME_DATA = {
+  title: "Welcome to SS Fashion",
+  subtitle: "Where tradition meets modern elegance.",
+  sliderImages: [],
+  trending: [
+    { name: "Top Trending", image: "" },
+    { name: "Latest Designs", image: "" },
+    { name: "New Arrivals", image: "" },
+  ],
+  bannerText: "",
+};
+
 const Home = () => {
   const navigate = useNavigate();
-  const [homeData, setHomeData] = useState(null);
+  const [homeData, setHomeData] = useState(DEFAULT_HOME_DATA);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const trendingRef = useRef(null);
 
-  /* FETCH DATA */
+  // --------------------------
+  // FETCH DATA FROM FIRESTORE
+  // --------------------------
   useEffect(() => {
     let mounted = true;
+
     const fetchData = async () => {
       try {
-        const docRef = doc(db, "homepage", "homeContent");
-        const snap = await getDoc(docRef);
-        if (snap.exists() && mounted) setHomeData(snap.data());
+        const snap = await getDoc(doc(db, "homepage", "homeContent"));
+        if (snap.exists() && mounted) {
+          setHomeData({ ...DEFAULT_HOME_DATA, ...snap.data() });
+        } else if (mounted) {
+          setHomeData(DEFAULT_HOME_DATA);
+        }
       } catch (err) {
-        console.error("Failed to fetch homepage data:", err);
+        console.error("Homepage fetch failed:", err);
+        if (mounted) setHomeData(DEFAULT_HOME_DATA);
       } finally {
         if (mounted) setLoading(false);
       }
     };
+
     fetchData();
-    return () => { mounted = false; };
+    return () => (mounted = false);
   }, []);
 
-  const images = Array.isArray(homeData?.sliderImages) ? homeData.sliderImages : [];
-  const trending = Array.isArray(homeData?.trending) ? homeData.trending : [];
+  const images = Array.isArray(homeData.sliderImages) ? homeData.sliderImages : [];
+  const trending = Array.isArray(homeData.trending) ? homeData.trending : [];
 
-  /* AUTO SLIDER */
+  // --------------------------
+  // SCROLLING ITEMS (Marquee)
+  // --------------------------
+  const scrollingItems =
+    homeData.bannerText && homeData.bannerText.trim() !== ""
+      ? [{ name: homeData.bannerText }]
+      : trending.length > 0
+        ? trending
+        : DEFAULT_HOME_DATA.trending;
+
+  // --------------------------
+  // AUTO SLIDER
+  // --------------------------
   useEffect(() => {
     if (!images.length) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [images.length]);
+    const timer = setInterval(() => {
+      setCurrentIndex((p) => (p + 1) % images.length);
+    }, 3500); // slower speed
+    return () => clearInterval(timer);
+  }, [images]);
 
-  /* TRENDING ANIMATION */
+  // --------------------------
+  // TRENDING CARD ANIMATION
+  // --------------------------
   useEffect(() => {
     if (!trending.length) return;
     const cards = trendingRef.current?.querySelectorAll(".trend-card");
     if (!cards) return;
 
     const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("animate-visible");
-          }
-        });
-      },
+      (entries) =>
+        entries.forEach(
+          (e) => e.isIntersecting && e.target.classList.add("animate-visible")
+        ),
       { threshold: 0.3 }
     );
 
@@ -63,107 +94,108 @@ const Home = () => {
     return () => obs.disconnect();
   }, [trending]);
 
-  const prev = () =>
-    setCurrentIndex((prev) => (images.length ? (prev - 1 + images.length) % images.length : 0));
-
-  const next = () =>
-    setCurrentIndex((prev) => (images.length ? (prev + 1) % images.length : 0));
+  if (loading) return <p style={{ textAlign: "center", padding: 30 }}>Loading...</p>;
 
   return (
     <div className="home-container">
 
-      {/* ✅ AMAZON-STYLE MOBILE TRENDING AD */}
-      {/* ✅ AMAZON-STYLE MOBILE TRENDING AD */}
-      {!loading && trending.length > 0 && (
-        <div
-          className="mobile-trending-banner"
-          style={{ "--items": trending.length }}
-        >
-          <span className="banner-label">
-            <span className="flash">⚡</span>
-            Today Trending
-          </span>
+      {/* MOBILE TRENDING BANNER */}
+      <div className="mobile-trending-banner">
+        <span className="banner-label">
+          <span className="flash">⚡</span>
+          {"Today Trending"}
+        </span>
 
-          <div className="marquee">
-            <div className="marquee-content">
-              {[...trending, ...trending].map((t, i) => (
-                <span key={i} className="marquee-item">
-                  {t.name}
-                </span>
-              ))}
-            </div>
+        <div className="marquee">
+          <div className="marquee-content">
+            {[...scrollingItems, ...scrollingItems].map((item, i) => (
+              <span key={i} className="marquee-item">
+                {item.name}
+              </span>
+            ))}
           </div>
+        </div>
 
-          {/* Gradient fade edges */}
-          <span className="fade-left"></span>
-          <span className="fade-right"></span>
+        <span className="fade-left"></span>
+        <span className="fade-right"></span>
+      </div>
+
+      {/* HERO */}
+      <div className="hero">
+        <h1>{homeData.title || DEFAULT_HOME_DATA.title}</h1>
+        <p>{homeData.subtitle || DEFAULT_HOME_DATA.subtitle}</p>
+        <button className="shop-btn" onClick={() => navigate("/categories")}>
+          Shop Now
+        </button>
+      </div>
+
+      {/* SLIDER */}
+      {images.length > 0 && (
+        <div className="slider">
+          <FiChevronLeft
+            className="arrow left"
+            onClick={() => setCurrentIndex((p) => (p - 1 + images.length) % images.length)}
+          />
+
+          {images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              className={`slide-img ${i === currentIndex ? "active" : ""}`}
+              alt=""
+            />
+          ))}
+
+          <FiChevronRight
+            className="arrow right"
+            onClick={() => setCurrentIndex((p) => (p + 1) % images.length)}
+          />
         </div>
       )}
 
+      {/* TRENDING CARDS */}
+      <div className="trending">
+        <h2>Top Trending Collections</h2>
 
-      {/* SHOW LOADING */}
-      {loading || !homeData ? (
-        <p style={{ textAlign: "center", padding: 30 }}>Loading...</p>
-      ) : (
-        <>
-          <div className="hero">
-            <h1>{homeData.title}</h1>
-            <p>{homeData.subtitle}</p>
-            <button className="shop-btn" onClick={() => navigate("/categories")}>
-              Shop Now
-            </button>
-          </div>
-
-          <div className="slider">
-            <FiChevronLeft className="arrow left" onClick={prev} />
-            {images.map((src, idx) => (
-              <img
-                key={idx}
-                src={src}
-                alt=""
-                className={`slide-img ${idx === currentIndex ? "active" : ""}`}
-              />
+        <div className="trend-cards" ref={trendingRef}>
+          {trending.length > 0
+            ? trending.map((t, i) => (
+              <div className="trend-card animate-hidden" key={i}>
+                {t.image ? <img src={t.image} alt={t.name} /> : null}
+                <h4>{t.name}</h4>
+              </div>
+            ))
+            : DEFAULT_HOME_DATA.trending.map((t, i) => (
+              <div className="trend-card animate-hidden" key={i}>
+                <h4>{t.name}</h4>
+              </div>
             ))}
-            <FiChevronRight className="arrow right" onClick={next} />
-          </div>
+        </div>
 
-          <div className="trending">
-            <h2>Top Trending Collections</h2>
+        <button className="trending-btn" onClick={() => navigate("/categories")}>
+          Shop Now
+        </button>
+      </div>
 
-            <div className="trend-cards" ref={trendingRef}>
-              {trending.map((t, idx) => (
-                <div className="trend-card animate-hidden" key={idx}>
-                  <img src={t.image} alt={t.name} />
-                  <h4>{t.name}</h4>
-                </div>
-              ))}
-            </div>
-
-            <button className="trending-btn" onClick={() => navigate("/categories")}>
-              Shop Now
-            </button>
-          </div>
-
-          <div className="features-container">
-            <div className="feature-box">
-              <h3>Awesome Collections</h3>
-              <p>Hand picked great collection.</p>
-            </div>
-            <div className="feature-box">
-              <h3>Best Quality</h3>
-              <p>You get the best quality you deserve.</p>
-            </div>
-            <div className="feature-box">
-              <h3>Best Offers</h3>
-              <p>Great designs at low price.</p>
-            </div>
-            <div className="feature-box">
-              <h3>Secure Payments</h3>
-              <p>Your payments are secured by Razorpay.</p>
-            </div>
-          </div>
-        </>
-      )}
+      {/* FEATURES */}
+      <div className="features-container">
+        <div className="feature-box">
+          <h3>Awesome Collections</h3>
+          <p>Hand picked great collection.</p>
+        </div>
+        <div className="feature-box">
+          <h3>Best Quality</h3>
+          <p>You get the best quality you deserve.</p>
+        </div>
+        <div className="feature-box">
+          <h3>Best Offers</h3>
+          <p>Great designs at low price.</p>
+        </div>
+        <div className="feature-box">
+          <h3>Secure Payments</h3>
+          <p>Your payments are secured by Razorpay.</p>
+        </div>
+      </div>
     </div>
   );
 };
