@@ -28,7 +28,7 @@ import "../Checkout.css";
 import "./PopupStyles.css";
 import { getNextInvoiceNumber } from "./getNextInvoiceNumber";
 import { getNextOrderId } from "./getNextOrderId";
-import { sendOrderStatusEmail } from "./notify";
+import { sendOrderPlacedEmail } from "./emailApi";
 const INDIA_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
   "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
@@ -337,26 +337,11 @@ export default function Checkout() {
         try {
           const savedOrder = await saveOrderToFirestore(orderEmail, paymentId);
           orderId = savedOrder.orderId; // SSF-0012
-          await sendOrderStatusEmail({
+          await sendOrderPlacedEmail({
             email: form.email,
             orderId,
-            paymentId,
             amount: grandTotal,
             name: `${form.firstName} ${form.lastName}`,
-            shippingAddress: {
-              address1: form.address1,
-              address2: form.address2,
-              city: form.city,
-              state: form.state,
-              pin: form.pin,
-              phone: form.phone,
-            },
-            items: cart.map((item) => ({
-              name: item.name,
-              qty: item.qty || 1,
-              price: item.price,
-            })),
-            statusType: "Placed",
           });
           await addDoc(collection(db, "adminNotifications"), {
             title: "New Order Received",

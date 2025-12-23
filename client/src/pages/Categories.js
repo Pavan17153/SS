@@ -15,6 +15,23 @@ const getPrimaryImage = (p) => {
     return p.image;
   return "/placeholder.jpg";
 };
+// ⭐ AMAZON-STYLE SEARCH HIGHLIGHT
+const highlightText = (text, search) => {
+  if (!search || !text) return text;
+
+  const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escaped})`, "gi");
+
+  return text.split(regex).map((part, i) =>
+    part.toLowerCase() === search.toLowerCase() ? (
+      <mark key={i} className="search-highlight">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+};
 
 // ==========================
 // DOM-Based Popup (works on mobile + desktop)
@@ -41,10 +58,21 @@ export default function CategoriesPage() {
   const location = useLocation();
 
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true); // ⭐ ADD THIS
+
   const [selectedCategory, setSelectedCategory] = useState("maggam-work");
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchHistory, setSearchHistory] = useState(
+    JSON.parse(localStorage.getItem("ssf_search_history") || "[]")
+  );
+
   const [priceFilter, setPriceFilter] = useState(5000);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
 
   // ⭐ MOBILE DROPDOWN STATE
   const [mobileDropdown, setMobileDropdown] = useState(false);
@@ -90,6 +118,8 @@ export default function CategoriesPage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        setLoading(true); // ⭐ START LOADING
+
         const col = collection(db, "products");
         const q = query(col, orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
@@ -119,20 +149,108 @@ export default function CategoriesPage() {
       } catch (err) {
         console.error("Failed to load products:", err);
         showPopup("Failed to load products", "error");
+      } finally {
+        setLoading(false); // ⭐ STOP LOADING
       }
     };
 
     fetchProducts();
   }, []);
+  // ⚡ DEBOUNCE SEARCH (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchText.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  // 🔍 AUTO SUGGESTIONS (SEPARATE EFFECT)
+  useEffect(() => {
+    if (!debouncedSearch) {
+      setSuggestions([]);
+      return;
+    }
+
+    const key = debouncedSearch.toLowerCase();
+
+    const matched = products
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(key) ||
+          p.title.toLowerCase().includes(key)
+      )
+      .slice(0, 6);
+
+    setSuggestions(matched);
+  }, [debouncedSearch, products]);
+
+  const saveSearchHistory = (term) => {
+    if (!term) return;
+
+    let history = [...searchHistory];
+    history = history.filter((h) => h !== term);
+    history.unshift(term);
+
+    if (history.length > 5) history.pop();
+
+    setSearchHistory(history);
+    localStorage.setItem("ssf_search_history", JSON.stringify(history));
+  };
+  const handleKeyNavigation = (e) => {
+    if (!showSuggestions) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) =>
+        prev < suggestions.length - 1 ? prev + 1 : 0
+      );
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) =>
+        prev > 0 ? prev - 1 : suggestions.length - 1
+      );
+    }
+
+    if (e.key === "Enter" && activeIndex >= 0) {
+      const selected = suggestions[activeIndex];
+      setSearchText(selected.name);
+      saveSearchHistory(selected.name);
+      navigate(`/product/${selected.id}`);
+      setShowSuggestions(false);
+      setActiveIndex(-1);
+    }
+  };
 
   // FILTERED PRODUCTS WITH SORT
   const filteredProducts = useMemo(() => {
-    let arr = products
-      .filter((p) => p.category === selectedCategory)
-      .filter((p) =>
-        (p.name || "").toLowerCase().includes(searchText.toLowerCase())
-      )
-      .filter((p) => Number(p.price) <= priceFilter);
+    let arr = products;
+
+    // ✅ SEARCH ACROSS ALL CATEGORIES
+    if (debouncedSearch !== "") {
+      const key = debouncedSearch.toLowerCase();
+
+      arr = arr
+        .map((p) => {
+          let score = 0;
+
+          if (p.name.toLowerCase().includes(key)) score += 5;
+          if (p.title.toLowerCase().includes(key)) score += 4;
+          if (p.description.toLowerCase().includes(key)) score += 2;
+          if (p.category.toLowerCase().includes(key)) score += 1;
+
+          return { ...p, _score: score };
+        })
+        .filter((p) => p._score > 0)
+        .sort((a, b) => b._score - a._score);
+    } else {
+      arr = arr.filter((p) => p.category === selectedCategory);
+    }
+
+    // ✅ PRICE FILTER
+    arr = arr.filter((p) => Number(p.price) <= priceFilter);
 
     // APPLY SORT
     if (sortBy === "in-stock") arr = arr.filter((p) => p.stockQty > 0);
@@ -141,7 +259,7 @@ export default function CategoriesPage() {
     else if (sortBy === "high-low") arr = arr.sort((a, b) => b.price - a.price);
 
     return arr;
-  }, [products, selectedCategory, searchText, priceFilter, sortBy]);
+  }, [products, selectedCategory, debouncedSearch, priceFilter, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice(
@@ -219,7 +337,8 @@ export default function CategoriesPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          const idx = Number(entry.target.datasetIndex || 0);
+          const idx = Number(entry.target.dataset.index || 0);
+
           const staggerBase = (idx % 6) * 80;
           if (entry.isIntersecting) {
             entry.target.style.transitionDelay = `${staggerBase}ms`;
@@ -234,7 +353,19 @@ export default function CategoriesPage() {
     );
     cards.forEach((card) => observer.observe(card));
     return () => observer.disconnect();
-  }, [paginatedProducts]);
+  }, [paginatedProducts, loading]);
+
+  // ⭐ AMAZON STYLE SKELETON CARD
+  const SkeletonCard = () => (
+    <div className="product-card skeleton">
+      <div className="skeleton-img shimmer"></div>
+      <div className="skeleton-line shimmer"></div>
+      <div className="skeleton-line small shimmer"></div>
+      <div className="skeleton-price shimmer"></div>
+      <div className="skeleton-btn shimmer"></div>
+      <div className="skeleton-btn shimmer"></div>
+    </div>
+  );
 
   return (
     <div className="categories-container">
@@ -316,16 +447,59 @@ export default function CategoriesPage() {
 
       {/* PRODUCTS SECTION */}
       <div className="product-section">
-        <input
-          type="text"
-          placeholder="Search products..."
-          className="search-input"
-          value={searchText}
-          onChange={(e) => {
-            setSearchText(e.target.value);
-            setCurrentPage(1);
-          }}
-        />
+        <div className="search-wrapper">
+          <span className="search-icon">🔍</span>
+
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="search-input"
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setShowSuggestions(true);
+              setCurrentPage(1);
+            }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            onKeyDown={handleKeyNavigation}
+          />
+
+          {/* 🔍 AUTO SUGGEST DROPDOWN */}
+          {showSuggestions && (suggestions.length > 0 || searchHistory.length > 0) && (
+            <div className="search-suggestions">
+              {debouncedSearch === "" &&
+                searchHistory.map((h, i) => (
+                  <div
+                    key={i}
+                    className="suggestion-item history"
+                    onClick={() => {
+                      setSearchText(h);
+                      saveSearchHistory(h);
+                    }}
+                  >
+                    🕘 {h}
+                  </div>
+                ))}
+
+              {suggestions.map((s, i) => (
+                <div
+                  key={s.id}
+                  className={`suggestion-item ${i === activeIndex ? "active" : ""}`}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onClick={() => {
+                    setSearchText(s.name);
+                    saveSearchHistory(s.name);
+                    navigate(`/product/${s.id}`);
+                  }}
+                >
+                  🔍 {highlightText(s.name, debouncedSearch)}
+                </div>
+              ))}
+
+            </div>
+          )}
+        </div>
+
 
         <div className="price-filter">
           <label>Max Price: ₹{priceFilter}</label>
@@ -342,10 +516,17 @@ export default function CategoriesPage() {
           />
         </div>
 
-        <h4 className="product-title">{selectedCategory.replace("-", " ").toUpperCase()}</h4>
+        <h4 className="product-title">
+          {debouncedSearch
+            ? `Showing ${filteredProducts.length} results for "${debouncedSearch}"`
+            : selectedCategory.replace("-", " ").toUpperCase()}
+        </h4>
+
 
         <div className="product-grid">
-          {paginatedProducts.length > 0 ? (
+          {loading ? (
+            Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : paginatedProducts.length > 0 ? (
             paginatedProducts.map((p, i) => (
               <div key={p.id} className="product-card" data-index={i}>
                 <img
@@ -357,7 +538,7 @@ export default function CategoriesPage() {
                 />
 
                 <h5 className="product-name" onClick={() => navigate(`/product/${p.id}`)}>
-                  {p.name}
+                  {highlightText(p.name, searchText)}
                 </h5>
 
                 <div className="price-row">
@@ -373,7 +554,11 @@ export default function CategoriesPage() {
                   View Details
                 </button>
 
-                <button className="add-btn" disabled={p.stockQty <= 0} onClick={() => addToCart(p)}>
+                <button
+                  className="add-btn"
+                  disabled={p.stockQty <= 0}
+                  onClick={() => addToCart(p)}
+                >
                   Add to Cart
                 </button>
               </div>
@@ -382,6 +567,7 @@ export default function CategoriesPage() {
             <p>No products found</p>
           )}
         </div>
+
 
         {totalPages > 1 && (
           <div className="pagination">

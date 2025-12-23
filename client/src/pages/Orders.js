@@ -12,7 +12,7 @@ import {
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import "../Orders.css";
-import { sendOrderStatusEmail } from "./notify";
+import { sendOrderPlacedEmail } from "./emailApi";
 function toMillis(createdAt) {
   if (!createdAt) return 0;
   if (createdAt.toDate) return createdAt.toDate().getTime();
@@ -128,15 +128,9 @@ export default function Orders() {
       setTimeout(() => setSuccessPopup(false), 2500);
 
       // ✅ CANCEL EMAIL (NOW WORKS)
-      await sendOrderStatusEmail({
+      await sendOrderCancelledEmail({
         email: order.customerEmail,
         orderId: order.orderId,
-        paymentId: order.paymentId,
-        amount: order.totalPrice,
-        name: order.billingDetails?.firstName || "Customer",
-        items: order.items,
-        shippingAddress: order.billingDetails,
-        statusType: "Cancelled",
       });
 
     } catch (err) {

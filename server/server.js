@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import notifyRoutes from "./notifyRoutes.js";
+import emailRoutes from "./emailRoutes.js";
 
 dotenv.config({ override: true });
 
@@ -99,12 +99,16 @@ app.post("/verify-payment", (req, res) => {
 /* =========================
    EMAIL ROUTES
 ========================= */
-app.use("/api", notifyRoutes);
+app.use("/api", emailRoutes);
 
 /* =========================
    START SERVER
 ========================= */
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+app.get("/", (req, res) => {
+  res.send("Server running");
 });
+
+app.listen(process.env.PORT, () => {
+  console.log(`✅ Server running on ${process.env.PORT}`);
+});
+
