@@ -19,7 +19,9 @@ export default function ProductAdmin() {
     stockQty: "",
     description: "",
     images: [],
-    image: ""
+    image: "",
+    offerPercent: "",      // 🔥 NEW
+    badgeType: ""
   });
 
   const productsRef = collection(db, "products");
@@ -156,6 +158,8 @@ export default function ProductAdmin() {
         description: product.description,
         images: product.images,
         image: product.images[0],
+        offerPercent: Number(product.offerPercent || 0),
+        badgeType: product.badgeType || "",
         createdAt: serverTimestamp()
       };
 
@@ -173,7 +177,9 @@ export default function ProductAdmin() {
         stockQty: "",
         description: "",
         images: [],
-        image: ""
+        image: "",
+        offerPercent: "",
+        badgeType: ""
       });
     } catch (err) {
       alert("Save failed: " + err.message);
@@ -240,6 +246,27 @@ export default function ProductAdmin() {
         value={product.stockQty}
         onChange={(e) => setProduct({ ...product, stockQty: e.target.value })}
       />
+      <label>Offer Percentage (optional)</label>
+      <input
+        type="number"
+        placeholder="Eg: 20"
+        value={product.offerPercent}
+        onChange={(e) =>
+          setProduct({ ...product, offerPercent: e.target.value })
+        }
+      />
+
+      <label>Badge Type (optional)</label>
+      <select
+        value={product.badgeType}
+        onChange={(e) =>
+          setProduct({ ...product, badgeType: e.target.value })
+        }
+      >
+        <option value="">None</option>
+        <option value="bestseller">Bestseller</option>
+        <option value="trending">Trending</option>
+      </select>
 
       <label>Description</label>
       <textarea

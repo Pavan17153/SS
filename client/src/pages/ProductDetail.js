@@ -41,9 +41,11 @@ export default function ProductDetail() {
       if (d.id !== currentId) {
         all.push({
           id: d.id,
-          ...d.data(),
+          title: d.data().title || d.data().name || "",
+          price: d.data().price || 0,
           image: d.data().images?.[0] || d.data().image || "/placeholder.jpg",
         });
+
       }
     });
     setRelated(all.sort(() => 0.5 - Math.random()).slice(0, 4));
@@ -69,14 +71,18 @@ export default function ProductDetail() {
 
       const prodData = {
         id: snap.id,
-        title: data.title || data.name,
-        price: data.price ?? 0,
-        original: data.original ?? data.price ?? 0,
+        name: data.name || data.title || "",
+        title: data.title || data.name || "",
+        price: Number(data.price) || 0,
+        original: Number(data.original) || Number(data.price) || 0,
         stockQty: data.stockQty ?? 0,
         description: data.description || "",
         images: finalImages,
-        category: data.category || "",
+        category: (data.category || "").trim(),
+        offerPercent: Number(data.offerPercent || 0),
+        badgeType: data.badgeType || "",
       };
+
 
       setProduct(prodData);
       fetchRelatedProducts(prodData.category, snap.id);
@@ -109,7 +115,8 @@ export default function ProductDetail() {
     }
 
     let cart = JSON.parse(localStorage.getItem(userKey) || "[]");
-    const existIndex = cart.findIndex((c) => c.id === product.id);
+    const existIndex = cart.findIndex((c) => c.productId === product.id);
+
     const stock = Number(product.stockQty) || 0;
     const currentQty = existIndex >= 0 ? (cart[existIndex].qty || 0) : 0;
 
@@ -123,12 +130,16 @@ export default function ProductDetail() {
       cart[existIndex].qty = (cart[existIndex].qty || 0) + 1;
     } else {
       cart.push({
+        productId: product.id,
         id: product.id,
-        name: product.title,
+        name: product.name,
+        category: product.category,
         price: product.price,
         qty: 1,
         image: images[0],
+        stock: product.stockQty || 0,
       });
+
     }
 
     localStorage.setItem(userKey, JSON.stringify(cart));
@@ -160,6 +171,7 @@ export default function ProductDetail() {
       <div className="detail-left">
         <div
           className={`zoom-box ${zoom ? "active" : ""}`}
+
           onMouseMove={handleMouseMove}
           onMouseEnter={() => setZoom(true)}
           onMouseLeave={() => setZoom(false)}
@@ -168,9 +180,22 @@ export default function ProductDetail() {
             backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
             backgroundSize: zoom ? "260%" : "100%",
           }}
+
         >
-          {/* ⭐ MERGED BLOCK YOU ASKED */}
-          <div className="best-seller">Best Seller</div>
+          {/* 🔥 OFFER BADGE */}
+          {product.offerPercent > 0 && (
+            <div className="offer-badge">
+              {product.offerPercent}% OFF
+            </div>
+          )}
+
+          {/* 🟡 AMAZON BADGE */}
+          {product.badgeType && (
+            <div className={`badge-label ${product.badgeType}`}>
+              {product.badgeType === "bestseller" ? "Bestseller" : "Trending"}
+            </div>
+          )}
+
 
           <div className="zoom-icon">
             <FaSearchPlus />

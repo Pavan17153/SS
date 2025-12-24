@@ -141,6 +141,8 @@ export default function CategoriesPage() {
                 ? [data.images].filter((img) => img && img.trim())
                 : [],
             image: data.image || "",
+            offerPercent: Number(data.offerPercent || 0), // 🔥
+            badgeType: data.badgeType || "",
             createdAt: data.createdAt || null,
           };
         });
@@ -198,6 +200,27 @@ export default function CategoriesPage() {
     localStorage.setItem("ssf_search_history", JSON.stringify(history));
   };
   const handleKeyNavigation = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      // ✅ If suggestion selected → go to product
+      if (activeIndex >= 0 && suggestions[activeIndex]) {
+        const selected = suggestions[activeIndex];
+        setSearchText(selected.name);
+        saveSearchHistory(selected.name);
+        navigate(`/product/${selected.id}`);
+      } else {
+        // ✅ Normal search (ENTER without selecting suggestion)
+        saveSearchHistory(searchText.trim());
+        setCurrentPage(1);
+      }
+
+      setShowSuggestions(false);
+      setActiveIndex(-1);
+      document.activeElement.blur();
+      return;
+    }
+
     if (!showSuggestions) return;
 
     if (e.key === "ArrowDown") {
@@ -213,16 +236,8 @@ export default function CategoriesPage() {
         prev > 0 ? prev - 1 : suggestions.length - 1
       );
     }
-
-    if (e.key === "Enter" && activeIndex >= 0) {
-      const selected = suggestions[activeIndex];
-      setSearchText(selected.name);
-      saveSearchHistory(selected.name);
-      navigate(`/product/${selected.id}`);
-      setShowSuggestions(false);
-      setActiveIndex(-1);
-    }
   };
+
 
   // FILTERED PRODUCTS WITH SORT
   const filteredProducts = useMemo(() => {
@@ -447,14 +462,17 @@ export default function CategoriesPage() {
 
       {/* PRODUCTS SECTION */}
       <div className="product-section">
-        <div className="search-wrapper">
+        <div className="search-wrapper sticky-search">
           <span className="search-icon">🔍</span>
 
           <input
-            type="text"
+            type="search"
             placeholder="Search products..."
             className="search-input"
             value={searchText}
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
             onChange={(e) => {
               setSearchText(e.target.value);
               setShowSuggestions(true);
@@ -463,6 +481,7 @@ export default function CategoriesPage() {
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             onKeyDown={handleKeyNavigation}
           />
+
 
           {/* 🔍 AUTO SUGGEST DROPDOWN */}
           {showSuggestions && (suggestions.length > 0 || searchHistory.length > 0) && (
@@ -529,6 +548,20 @@ export default function CategoriesPage() {
           ) : paginatedProducts.length > 0 ? (
             paginatedProducts.map((p, i) => (
               <div key={p.id} className="product-card" data-index={i}>
+                {/* 🔥 OFFER BADGE */}
+                {p.offerPercent > 0 && (
+                  <div className="offer-badge">
+                    {p.offerPercent}% OFF
+                  </div>
+                )}
+
+                {/* 🟡 AMAZON BADGE */}
+                {p.badgeType && (
+                  <div className={`badge-label ${p.badgeType}`}>
+                    {p.badgeType === "bestseller" ? "Bestseller" : "Trending"}
+                  </div>
+                )}
+
                 <img
                   src={getPrimaryImage(p)}
                   alt={p.name}
