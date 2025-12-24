@@ -6,6 +6,7 @@
   margin: auto;
   padding: 15px;
   font-family: "Segoe UI", Arial, sans-serif;
+  margin-top: -50px;
 }
 
 /* ----------------------------------------------------
@@ -367,4 +368,9 @@ button {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.summary-row.free-shipping strong {
+  color: #0a8a24;
+  /* green for free */
 }

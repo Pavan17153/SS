@@ -148,13 +148,13 @@ export default function Cart() {
   const total = cart.reduce((s, i) => s + i.price * (i.qty || 1), 0);
 
   // SHIPPING RULES
+  // SHIPPING RULES (Updated for SS Fashion)
   let shipping = 0;
   if (cart.length > 0) {
-    if (total <= 1500) shipping = 60;
-    else if (total <= 3000) shipping = 120;
-    else if (total <= 4500) shipping = 180;
-    else shipping = 240;
+    if (total >= 1500) shipping = 0; // Free shipping for orders 1500+
+    else shipping = 40;              // Flat rate 30 for smaller orders
   }
+
 
   // APPLY COUPON
   const applyCoupon = (coupon) => {
@@ -209,25 +209,44 @@ export default function Cart() {
   };
 
   // CHECK STOCK BEFORE PROCEEDING
+  // CHECK STOCK BEFORE PROCEEDING - OPTIMIZED
   const proceedCheckout = async () => {
-    for (let i = 0; i < cart.length; i++) {
-      const item = cart[i];
-      const docRef = doc(db, "products", item.id);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        showPopup(`"${item.name}" does not exist anymore`);
-        return;
-      }
-      const realStock = docSnap.data().stockQty || 0;
-      if (realStock < item.qty) {
-        showPopup(`"${item.name}" is out of stock. Only ${realStock} left`);
-        return;
-      }
+    if (cart.length === 0) {
+      showPopup("Your cart is empty");
+      return;
     }
 
-    localStorage.setItem("ssf_checkout_total", grandTotal);
-    nav("/checkout");
+    try {
+      // Fetch all docs in parallel
+      const stockChecks = await Promise.all(
+        cart.map(async (item) => {
+          const docSnap = await getDoc(doc(db, "products", item.id));
+          return { item, docSnap };
+        })
+      );
+
+      // Validate stock
+      for (let { item, docSnap } of stockChecks) {
+        if (!docSnap.exists()) {
+          showPopup(`"${item.name}" does not exist anymore`);
+          return;
+        }
+        const realStock = docSnap.data().stockQty || 0;
+        if (realStock < item.qty) {
+          showPopup(`"${item.name}" is out of stock. Only ${realStock} left`);
+          return;
+        }
+      }
+
+      // Save checkout total
+      localStorage.setItem("ssf_checkout_total", grandTotal);
+      nav("/checkout");
+    } catch (err) {
+      console.error("Checkout error:", err);
+      showPopup("Something went wrong. Please try again.");
+    }
   };
+
 
   return (
     <div className="cart-container">
@@ -346,10 +365,11 @@ export default function Cart() {
                 <span>Subtotal</span>
                 <strong>₹{total}</strong>
               </div>
-              <div className="summary-row">
+              <div className={`summary-row ${shipping === 0 ? "free-shipping" : "flat-shipping"}`}>
                 <span>Shipping</span>
-                <strong>Flat rate: ₹{shipping}</strong>
+                <strong>{shipping === 0 ? "Free" : `₹${shipping}`}</strong>
               </div>
+
 
               {/* COUPON BOX */}
               {coupons.length > 0 && !appliedCoupon && (

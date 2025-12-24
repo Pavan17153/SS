@@ -268,3 +268,8 @@ textarea {
     border-radius: 10px;
   }
 }
+
+.summary-row.free-shipping strong {
+  color: #0a8a24;
+  /* green for free */
+}

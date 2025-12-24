@@ -108,10 +108,8 @@ export default function Checkout() {
 
   let shipping = 0;
   if (cart.length > 0) {
-    if (total <= 1500) shipping = 60;
-    else if (total <= 3000) shipping = 120;
-    else if (total <= 4500) shipping = 180;
-    else shipping = 240;
+    if (total >= 1500) shipping = 0; // Free shipping for orders 1500+
+    else shipping = 40;              // Flat rate 30 for smaller orders
   }
 
   const discount = appliedCoupon ? appliedCoupon.amount : 0; // ✅ apply coupon
@@ -862,9 +860,9 @@ export default function Checkout() {
               <span>Subtotal</span>
               <span>₹{total}</span>
             </div>
-            <div className="order-total-row">
+            <div className={`summary-row ${shipping === 0 ? "free-shipping" : "flat-shipping"}`}>
               <span>Shipping</span>
-              <span>₹{shipping}</span>
+              <strong>{shipping === 0 ? "Free" : `₹${shipping}`}</strong>
             </div>
             {appliedCoupon && (
               <div className="order-total-row">
