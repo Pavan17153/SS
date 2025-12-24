@@ -69,12 +69,12 @@ export default function Checkout() {
     }
   }, []);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, () => {
-      setCart(loadCorrectCart());
-    });
-    return () => unsub();
-  }, []);
+  // useEffect(() => {
+  //   const unsub = onAuthStateChanged(auth, () => {
+  //     setCart(loadCorrectCart());
+  //   });
+  //   return () => unsub();
+  // }, []);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -95,6 +95,8 @@ export default function Checkout() {
   const [createAccount, setCreateAccount] = useState(false);
   const [stateSuggestions, setStateSuggestions] = useState([]);
   const [loadingSave, setLoadingSave] = useState(false);
+  const [payInitiated, setPayInitiated] = useState(false);
+
 
   const [emailExistPopupVisible, setEmailExistPopupVisible] = useState(false);
   const [loginPopupVisible, setLoginPopupVisible] = useState(false);
@@ -174,10 +176,63 @@ export default function Checkout() {
     const timer = setTimeout(() => setInfoMessage(null), 7000);
     return () => clearTimeout(timer);
   }, [infoMessage]);
+  const checkEmailOnBlur = async () => {
+    const email = form.email.trim().toLowerCase();
+    if (!email) return;
+
+    try {
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      if (
+        methods.length > 0 &&
+        !auth.currentUser &&
+        !emailExistPopupVisible &&
+        !loginPopupVisible
+      ) {
+        setLoginPrefillEmail(email);
+        setEmailExistPopupVisible(true);
+      }
+    } catch (err) {
+      console.warn("Email check failed:", err);
+    }
+  };
+  const resetPaymentState = (message = null) => {
+    setPayInitiated(false);
+    setProceedToPayment(false);
+    setCheckingEmail(false);
+
+    if (message) {
+      setInfoMessage({
+        type: "error",
+        text: message,
+      });
+    }
+  };
+  // ✅ CHECK & LOCK STOCK BEFORE PAYMENT
+  const checkStockBeforePayment = async () => {
+    await runTransaction(db, async (tx) => {
+      for (const item of cart) {
+        const pid = item.productId || item.id;
+        if (!pid) throw new Error("Invalid product reference");
+
+        const ref = doc(db, "products", pid);
+        const snap = await tx.get(ref);
+
+        if (!snap.exists()) {
+          throw new Error(`${item.name} no longer exists`);
+        }
+
+        const stockQty = snap.data().stockQty || 0;
+
+        if (stockQty < (item.qty || 1)) {
+          throw new Error(`${item.name} is out of stock`);
+        }
+      }
+    });
+  };
 
   const handlePayNowClicked = async () => {
+    if (payInitiated || checkingEmail) return;
     setInfoMessage(null);
-
     const v = validate();
     if (!v.ok) {
       if (v.field === "agreeTerms")
@@ -192,6 +247,7 @@ export default function Checkout() {
           type: "error",
           text: `Please fill required field: ${v.field}`,
         });
+
       return;
     }
 
@@ -204,15 +260,33 @@ export default function Checkout() {
 
     const currentUser = auth.currentUser;
     if (currentUser && currentUser.email.toLowerCase() === email) {
-      setProceedToPayment(true);
-      return;
+      try {
+        // 🔒 CHECK STOCK BEFORE PAYMENT
+        await checkStockBeforePayment();
+
+        setPayInitiated(true);
+        setInfoMessage({
+          type: "info",
+          text: "Opening secure payment...",
+        });
+        setProceedToPayment(true);
+        return;
+
+      } catch (err) {
+        setInfoMessage({
+          type: "error",
+          text: err.message || "Some items are out of stock",
+        });
+        return;
+      }
+
     }
 
     setCheckingEmail(true);
 
     try {
       const methods = await fetchSignInMethodsForEmail(auth, email);
-      if (methods && methods.length > 0) {
+      if (methods && methods.length > 0 && !emailExistPopupVisible) {
         setLoginPrefillEmail(email);
         setEmailExistPopupVisible(true);
         setCheckingEmail(false);
@@ -238,7 +312,11 @@ export default function Checkout() {
       try {
         await sendPasswordResetEmail(auth, email);
       } catch { }
-
+      setPayInitiated(true);
+      setInfoMessage({
+        type: "info",
+        text: "Opening secure payment...",
+      });
       setProceedToPayment(true);
       setCheckingEmail(false);
     } catch (err) {
@@ -254,40 +332,51 @@ export default function Checkout() {
   const waitForAuth = (timeout = 5000) =>
     new Promise((resolve) => {
       if (auth.currentUser) return resolve(auth.currentUser);
+
       let waited = 0;
       const iv = setInterval(() => {
+        if (!document.body) {
+          clearInterval(iv);
+          return resolve(null);
+        }
+
         if (auth.currentUser) {
           clearInterval(iv);
-          return resolve(auth.currentUser);
+          resolve(auth.currentUser);
         }
+
         waited += 200;
         if (waited >= timeout) {
           clearInterval(iv);
-          return resolve(null);
+          resolve(null);
         }
       }, 200);
     });
 
-  // Reduce stock in Firestore after successful payment
+
+  // ✅ DEDUCT STOCK AFTER PAYMENT (NO CHECK)
   const reduceStockInFirestore = async () => {
-    for (const item of cart) {
-      const pid = item.productId || item.id;
-      if (!pid) continue;
+    await runTransaction(db, async (tx) => {
+      for (const item of cart) {
+        const pid = item.productId || item.id;
+        if (!pid) continue;
 
-      const productRef = doc(db, "products", pid);
-      const snap = await getDoc(productRef);
-      if (!snap.exists()) continue;
+        const ref = doc(db, "products", pid);
+        const snap = await tx.get(ref);
 
-      const currentStock = snap.data().stockQty || 0;
-      const reduceBy = item.qty || 0;
-      const newStock = Math.max(currentStock - reduceBy, 0);
+        if (!snap.exists()) continue;
 
-      // update stockQty only (rules allow update of only stockQty)
-      await updateDoc(productRef, {
-        stockQty: newStock,
-      });
-    }
+        const currentStock = snap.data().stockQty || 0;
+
+        // ⚠️ DO NOT RECHECK — already validated before payment
+        tx.update(ref, {
+          stockQty: Math.max(currentStock - (item.qty || 1), 0),
+        });
+      }
+    });
   };
+
+
 
   useEffect(() => {
     const handler = async (e) => {
@@ -436,6 +525,16 @@ export default function Checkout() {
     window.addEventListener("payment_success", handler);
     return () => window.removeEventListener("payment_success", handler);
   }, [form, cart, accountCreatedEmail, appliedCoupon]);
+  useEffect(() => {
+    const handlePaymentCancelled = () => {
+      resetPaymentState("Payment was cancelled. You can try again.");
+    };
+
+    window.addEventListener("payment_cancelled", handlePaymentCancelled);
+    return () =>
+      window.removeEventListener("payment_cancelled", handlePaymentCancelled);
+  }, []);
+
 
   // ============================
   // saveCouponUsedData (atomic, prevents double-use & race)
@@ -683,10 +782,15 @@ export default function Checkout() {
     <>
       <div style={{ maxWidth: 1150, margin: "10px auto" }}>
         {infoMessage && (
-          <div className={`popup-msg ${infoMessage.type}`} style={{ maxWidth: 1150 }}>
-            {infoMessage.text}
+          <div className={`popup-msg ${infoMessage.type}`}>
+            {infoMessage.type === "info" ? (
+              <span className="loading-dots">{infoMessage.text}</span>
+            ) : (
+              infoMessage.text
+            )}
           </div>
         )}
+
       </div>
 
       <div
@@ -810,7 +914,9 @@ export default function Checkout() {
               placeholder="Email address *"
               value={form.email}
               onChange={handleInput}
+              onBlur={checkEmailOnBlur}
             />
+
             <textarea
               name="orderNotes"
               placeholder="Order notes (optional)"
@@ -819,24 +925,10 @@ export default function Checkout() {
             />
 
             {!userEmail && (
-              <div style={{ marginTop: 10 }}>
-                <label
-                  style={{ display: "flex", alignItems: "center", gap: 8 }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={createAccount}
-                    onChange={() => setCreateAccount(!createAccount)}
-                  />
-                  <span>
-                    Create account for faster checkout & order tracking
-                  </span>
-                </label>
-                <p style={{ fontSize: 13, color: "#444", marginTop: 6 }}>
-                  If you don't create an account explicitly we may create one
-                  silently to save this order.
-                </p>
-              </div>
+              <p style={{ fontSize: 13, color: "#444", marginTop: 6 }}>
+                If you don't create an account explicitly we may create one
+                silently to save this order.
+              </p>
             )}
           </div>
         </div>
@@ -887,10 +979,15 @@ export default function Checkout() {
             <button
               className="place-order-btn"
               onClick={handlePayNowClicked}
-              disabled={checkingEmail || loadingSave}
+              disabled={checkingEmail || loadingSave || payInitiated}
               style={{ marginTop: 12 }}
             >
-              {checkingEmail ? "Checking..." : "Pay Now"}
+              {payInitiated
+                ? "Redirecting..."
+                : checkingEmail
+                  ? "Checking..."
+                  : "Pay Now"}
+
             </button>
 
             <div style={{ marginTop: 10 }}>
@@ -903,6 +1000,7 @@ export default function Checkout() {
                   customerPhone={form.phone}
                   agreeTerms={agreeTerms}
                   autoStart={true}
+                  setInfoMessage={setInfoMessage}
                 />
               )}
             </div>

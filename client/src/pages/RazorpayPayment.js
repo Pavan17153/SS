@@ -92,6 +92,12 @@ export default function RazorpayPayment({
           }
         },
         theme: { color: "#E91E63" },
+        modal: {
+          ondismiss: function () {
+            window.dispatchEvent(new CustomEvent("payment_cancelled"));
+          },
+        },
+
       };
 
       new window.Razorpay(options).open();

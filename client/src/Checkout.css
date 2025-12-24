@@ -273,3 +273,41 @@ textarea {
   color: #0a8a24;
   /* green for free */
 }
+
+/* INFO POPUP — PAYMENT LOADING */
+.popup-msg.info {
+  background: #2eb82e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+/* Loading dots animation */
+.loading-dots::after {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  text-align: left;
+  animation: dots 1.4s infinite;
+}
+
+@keyframes dots {
+  0% {
+    content: "";
+  }
+
+  33% {
+    content: ".";
+  }
+
+  66% {
+    content: "..";
+  }
+
+  100% {
+    content: "...";
+  }
+}
