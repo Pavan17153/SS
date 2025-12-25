@@ -36,12 +36,6 @@ export default function Cart() {
 
   // Load cart from localStorage
   const loadCart = async () => {
-    const filtered = updatedCart.filter(i => i.stockQty > 0);
-    if (filtered.length !== updatedCart.length) {
-      saveCart(filtered);
-      showPopup("Some items were removed because they are out of stock");
-    }
-
     const email = auth.currentUser?.email;
     const key = email ? `ssf_cart_${email}` : "ssf_cart";
     const stored = JSON.parse(localStorage.getItem(key) || "[]");
