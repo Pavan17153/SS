@@ -40,10 +40,12 @@ function generateRandomPassword(length = 12) {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
   let pw = "";
-  for (let i = 0; i < length; i++)
-    pw += chars.charAt(Math.floor(Math.random() * Math.random() * chars.length));
+  for (let i = 0; i < length; i++) {
+    pw += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
   return pw;
 }
+
 
 export default function Checkout() {
   const [userEmail, setUserEmail] = useState("");
@@ -208,29 +210,68 @@ export default function Checkout() {
     }
   };
   // ✅ CHECK & LOCK STOCK BEFORE PAYMENT
-  const checkStockBeforePayment = async () => {
+  // 🔒 CHECK & LOCK STOCK (AMAZON STYLE)
+  const checkAndLockStock = async () => {
+    const LOCK_TIME_MS = 5 * 60 * 1000; // 5 minutes
+
     await runTransaction(db, async (tx) => {
+      const now = Date.now();
+
       for (const item of cart) {
         const pid = item.productId || item.id;
-        if (!pid) throw new Error("Invalid product reference");
+        if (!pid) throw new Error("Invalid product");
 
         const ref = doc(db, "products", pid);
         const snap = await tx.get(ref);
-
         if (!snap.exists()) {
-          throw new Error(`${item.name} no longer exists`);
+          throw new Error(`${item.name} not found`);
         }
 
-        const stockQty = snap.data().stockQty || 0;
+        const data = snap.data();
+        const stockQty = data.stockQty || 0;
+        const lockedQty = data.lockedQty || 0;
+        const lockUntil = data.lockUntil?.toMillis?.() || 0;
 
-        if (stockQty < (item.qty || 1)) {
+        // Auto-unlock expired locks
+        const effectiveLocked =
+          lockUntil && lockUntil >= now ? lockedQty : 0;
+
+        const available = stockQty - effectiveLocked;
+        const qty = item.qty || 1;
+
+        if (available < qty) {
           throw new Error(`${item.name} is out of stock`);
         }
+
+        tx.update(ref, {
+          lockedQty: effectiveLocked + qty,
+          lockUntil:
+            effectiveLocked + qty > 0
+              ? Timestamp.fromMillis(now + LOCK_TIME_MS)
+              : null,
+        });
+
       }
     });
   };
 
   const handlePayNowClicked = async () => {
+    for (const item of cart) {
+      if (!item.productId && !item.id) {
+        setInfoMessage({
+          type: "error",
+          text: "Invalid product in cart. Please refresh.",
+        });
+        return;
+      }
+      if (!item.qty || item.qty <= 0) {
+        setInfoMessage({
+          type: "error",
+          text: "Invalid quantity detected.",
+        });
+        return;
+      }
+    }
     if (payInitiated || checkingEmail) return;
     setInfoMessage(null);
     const v = validate();
@@ -262,7 +303,7 @@ export default function Checkout() {
     if (currentUser && currentUser.email.toLowerCase() === email) {
       try {
         // 🔒 CHECK STOCK BEFORE PAYMENT
-        await checkStockBeforePayment();
+        await checkAndLockStock();
 
         setPayInitiated(true);
         setInfoMessage({
@@ -357,25 +398,66 @@ export default function Checkout() {
   // ✅ DEDUCT STOCK AFTER PAYMENT (NO CHECK)
   const reduceStockInFirestore = async () => {
     await runTransaction(db, async (tx) => {
+      const now = Date.now();
+
+      for (const item of cart) {
+        const pid = item.productId || item.id;
+        if (!pid) throw new Error("Invalid product");
+
+        const qty = item.qty || 1;
+        const ref = doc(db, "products", pid);
+        const snap = await tx.get(ref);
+        if (!snap.exists()) throw new Error("Product not found");
+
+        const data = snap.data();
+        const stockQty = data.stockQty || 0;
+        const lockedQty = data.lockedQty || 0;
+        const lockUntil = data.lockUntil?.toMillis?.() || 0;
+
+        // 🔒 CRITICAL VALIDATION
+        if (lockUntil < now) {
+          throw new Error(`${item.name} lock expired. Please try again.`);
+        }
+
+        if (lockedQty < qty) {
+          throw new Error(`${item.name} stock was not reserved correctly.`);
+        }
+
+        tx.update(ref, {
+          stockQty: stockQty - qty,
+          lockedQty: lockedQty - qty,
+          lockUntil: lockedQty - qty === 0 ? null : data.lockUntil,
+        });
+      }
+    });
+  };
+
+
+
+
+  // 🔓 UNLOCK STOCK (payment cancelled / tab closed)
+  const unlockStock = async () => {
+    await runTransaction(db, async (tx) => {
       for (const item of cart) {
         const pid = item.productId || item.id;
         if (!pid) continue;
 
         const ref = doc(db, "products", pid);
         const snap = await tx.get(ref);
-
         if (!snap.exists()) continue;
 
-        const currentStock = snap.data().stockQty || 0;
+        const lockedQty = snap.data().lockedQty || 0;
+        const qty = item.qty || 1;
 
-        // ⚠️ DO NOT RECHECK — already validated before payment
+        const newLocked = Math.max(lockedQty - qty, 0);
         tx.update(ref, {
-          stockQty: Math.max(currentStock - (item.qty || 1), 0),
+          lockedQty: newLocked,
+          lockUntil: newLocked === 0 ? null : snap.data().lockUntil,
         });
+
       }
     });
   };
-
 
 
   useEffect(() => {
@@ -526,9 +608,12 @@ export default function Checkout() {
     return () => window.removeEventListener("payment_success", handler);
   }, [form, cart, accountCreatedEmail, appliedCoupon]);
   useEffect(() => {
-    const handlePaymentCancelled = () => {
+
+    const handlePaymentCancelled = async () => {
+      await unlockStock();
       resetPaymentState("Payment was cancelled. You can try again.");
     };
+
 
     window.addEventListener("payment_cancelled", handlePaymentCancelled);
     return () =>
