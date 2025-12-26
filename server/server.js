@@ -15,12 +15,14 @@ app.use(
       "http://localhost:3001",
       "https://ssfashionladies.in",
       "https://www.ssfashionladies.in",
+      "https://ss-5q3f-b0z1z0srx-pavan17153s-projects.vercel.app",
+      "https://admin.ssfashionladies.in",
     ],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
-
 
 app.use(express.json());
 
@@ -104,9 +106,7 @@ app.use("/api", emailRoutes);
 /* =========================
    START SERVER
 ========================= */
-app.get("/", (req, res) => {
-  res.send("Server running");
-});
+
 
 const PORT = process.env.PORT || 5000;
 
