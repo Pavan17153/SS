@@ -71,12 +71,6 @@ export default function Checkout() {
     }
   }, []);
 
-  // useEffect(() => {
-  //   const unsub = onAuthStateChanged(auth, () => {
-  //     setCart(loadCorrectCart());
-  //   });
-  //   return () => unsub();
-  // }, []);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -113,7 +107,7 @@ export default function Checkout() {
   let shipping = 0;
   if (cart.length > 0) {
     if (total >= 1500) shipping = 0; // Free shipping for orders 1500+
-    else shipping = 40;              // Flat rate 30 for smaller orders
+    else shipping = 40;              // Flat rate 40 for smaller orders
   }
 
   const discount = appliedCoupon ? appliedCoupon.amount : 0; // ✅ apply coupon
@@ -210,34 +204,39 @@ export default function Checkout() {
     }
   };
   // ✅ CHECK & LOCK STOCK BEFORE PAYMENT
-  // 🔒 CHECK & LOCK STOCK (AMAZON STYLE)
   const checkAndLockStock = async () => {
     const LOCK_TIME_MS = 5 * 60 * 1000; // 5 minutes
 
     await runTransaction(db, async (tx) => {
       const now = Date.now();
+      const reads = [];
 
+      // ✅ PHASE 1: READ ALL PRODUCTS
       for (const item of cart) {
         const pid = item.productId || item.id;
         if (!pid) throw new Error("Invalid product");
 
         const ref = doc(db, "products", pid);
         const snap = await tx.get(ref);
+
         if (!snap.exists()) {
           throw new Error(`${item.name} not found`);
         }
 
-        const data = snap.data();
+        reads.push({ item, ref, data: snap.data() });
+      }
+
+      // ✅ PHASE 2: WRITE (LOCK STOCK)
+      for (const { item, ref, data } of reads) {
         const stockQty = data.stockQty || 0;
         const lockedQty = data.lockedQty || 0;
         const lockUntil = data.lockUntil?.toMillis?.() || 0;
 
-        // Auto-unlock expired locks
         const effectiveLocked =
           lockUntil && lockUntil >= now ? lockedQty : 0;
 
-        const available = stockQty - effectiveLocked;
         const qty = item.qty || 1;
+        const available = stockQty - effectiveLocked;
 
         if (available < qty) {
           throw new Error(`${item.name} is out of stock`);
@@ -245,15 +244,12 @@ export default function Checkout() {
 
         tx.update(ref, {
           lockedQty: effectiveLocked + qty,
-          lockUntil:
-            effectiveLocked + qty > 0
-              ? Timestamp.fromMillis(now + LOCK_TIME_MS)
-              : null,
+          lockUntil: Timestamp.fromMillis(now + LOCK_TIME_MS),
         });
-
       }
     });
   };
+
 
   const handlePayNowClicked = async () => {
     for (const item of cart) {
@@ -399,45 +395,50 @@ export default function Checkout() {
   const reduceStockInFirestore = async () => {
     await runTransaction(db, async (tx) => {
       const now = Date.now();
+      const reads = [];
 
+      // ✅ READ FIRST
       for (const item of cart) {
         const pid = item.productId || item.id;
-        if (!pid) throw new Error("Invalid product");
-
-        const qty = item.qty || 1;
         const ref = doc(db, "products", pid);
         const snap = await tx.get(ref);
-        if (!snap.exists()) throw new Error("Product not found");
 
-        const data = snap.data();
-        const stockQty = data.stockQty || 0;
-        const lockedQty = data.lockedQty || 0;
-        const lockUntil = data.lockUntil?.toMillis?.() || 0;
-
-        // 🔒 CRITICAL VALIDATION
-        if (lockUntil < now) {
-          throw new Error(`${item.name} lock expired. Please try again.`);
+        if (!snap.exists()) {
+          throw new Error("Product not found");
         }
 
-        if (lockedQty < qty) {
-          throw new Error(`${item.name} stock was not reserved correctly.`);
+        reads.push({ item, ref, data: snap.data() });
+      }
+
+      // ✅ WRITE SECOND
+      for (const { item, ref, data } of reads) {
+        const qty = item.qty || 1;
+
+        if (data.lockUntil?.toMillis?.() < now) {
+          throw new Error(`${item.name} lock expired`);
         }
+
+        if ((data.lockedQty || 0) < qty) {
+          throw new Error(`${item.name} was not reserved properly`);
+        }
+
+        const remainingLocked = (data.lockedQty || 0) - qty;
 
         tx.update(ref, {
-          stockQty: stockQty - qty,
-          lockedQty: lockedQty - qty,
-          lockUntil: lockedQty - qty === 0 ? null : data.lockUntil,
+          stockQty: (data.stockQty || 0) - qty,
+          lockedQty: remainingLocked,
+          lockUntil: remainingLocked === 0 ? null : data.lockUntil,
         });
       }
     });
   };
 
-
-
-
   // 🔓 UNLOCK STOCK (payment cancelled / tab closed)
   const unlockStock = async () => {
     await runTransaction(db, async (tx) => {
+      const reads = [];
+
+      // READ FIRST
       for (const item of cart) {
         const pid = item.productId || item.id;
         if (!pid) continue;
@@ -446,18 +447,22 @@ export default function Checkout() {
         const snap = await tx.get(ref);
         if (!snap.exists()) continue;
 
-        const lockedQty = snap.data().lockedQty || 0;
-        const qty = item.qty || 1;
+        reads.push({ item, ref, data: snap.data() });
+      }
 
-        const newLocked = Math.max(lockedQty - qty, 0);
+      // WRITE SECOND
+      for (const { item, ref, data } of reads) {
+        const qty = item.qty || 1;
+        const newLocked = Math.max((data.lockedQty || 0) - qty, 0);
+
         tx.update(ref, {
           lockedQty: newLocked,
-          lockUntil: newLocked === 0 ? null : snap.data().lockUntil,
+          lockUntil: newLocked === 0 ? null : data.lockUntil,
         });
-
       }
     });
   };
+
 
 
   useEffect(() => {
@@ -506,6 +511,8 @@ export default function Checkout() {
         try {
           const savedOrder = await saveOrderToFirestore(orderEmail, paymentId);
           orderId = savedOrder.orderId; // SSF-0012
+          console.log("🟢 Calling email API...");
+
           await sendOrderStatusEmail({
             email: form.email,
             orderId,
@@ -514,19 +521,15 @@ export default function Checkout() {
             name: `${form.firstName} ${form.lastName}`,
             shippingAddress: {
               address1: form.address1,
-              address2: form.address2,
               city: form.city,
               state: form.state,
               pin: form.pin,
-              phone: form.phone,
             },
-            items: cart.map((item) => ({
-              name: item.name,
-              qty: item.qty || 1,
-              price: item.price,
-            })),
+            items: cart.map(i => ({ name: i.name, qty: i.qty || 1, price: i.price })),
             statusType: "Placed",
           });
+
+
           await addDoc(collection(db, "adminNotifications"), {
             title: "New Order Received",
             message: `Order placed by ${orderEmail}`,

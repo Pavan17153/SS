@@ -101,8 +101,9 @@ export default function AdminOrders() {
         name: order.billingDetails?.firstName || "Customer",
         items: order.items,
         shippingAddress: order.billingDetails,
-        statusType: "shipped",
+        statusType: "Shipped",
       });
+
 
     } catch (err) {
       console.error("Error updating shipped status:", err);
@@ -130,7 +131,7 @@ export default function AdminOrders() {
         name: order.billingDetails?.firstName || "Customer",
         items: order.items,
         shippingAddress: order.billingDetails,
-        statusType: "delivered",
+        statusType: "Delivered",
       });
 
     } catch (err) {

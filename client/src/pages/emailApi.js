@@ -1,17 +1,27 @@
-const API = "http://localhost:5000/api/email";
+import axios from "axios";
 
-export const sendOrderPlacedEmail = async (data) => {
-    await fetch(`${API}/client/order-placed`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-    });
-};
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
-export const sendOrderCancelledEmail = async (data) => {
-    await fetch(`${API}/client/order-cancelled`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-    });
+export const sendOrderStatusEmail = async (data) => {
+    try {
+        const res = await axios.post(
+            `${SERVER_URL}/api/order-status-email`,
+            {
+                email: data.email,
+                orderId: data.orderId,
+                paymentId: data.paymentId,
+                amount: data.amount,
+                name: data.name,
+                items: data.items,
+                shippingAddress: data.shippingAddress,
+                statusType: data.statusType,
+            }
+        );
+
+        console.log("📧 Email sent:", res.data);
+        return res.data;
+    } catch (err) {
+        console.error("❌ Email API failed:", err.message);
+        throw err;
+    }
 };

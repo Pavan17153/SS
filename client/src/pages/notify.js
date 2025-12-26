@@ -2,17 +2,30 @@ import axios from "axios";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
+if (!SERVER_URL) {
+    console.error("❌ SERVER URL NOT FOUND. Check client/.env");
+}
+
 export const sendOrderStatusEmail = async (data) => {
     try {
         const res = await axios.post(
             `${SERVER_URL}/api/order-status-email`,
-            data
+            {
+                email: data.email,
+                orderId: data.orderId,
+                paymentId: data.paymentId,
+                amount: data.amount,
+                name: data.name,
+                items: data.items,
+                shippingAddress: data.shippingAddress,
+                statusType: data.statusType,
+            }
         );
-        console.log("📧 Email API response:", res.data);
+
+        console.log("📧 Email sent:", res.data);
+        return res.data;
     } catch (err) {
-        console.error(
-            "❌ Email API failed:",
-            err.response?.data || err.message
-        );
+        console.error("❌ Email API failed:", err.message);
+        throw err;
     }
 };

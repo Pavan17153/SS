@@ -12,7 +12,7 @@ import {
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import "../Orders.css";
-import { sendOrderPlacedEmail } from "./emailApi";
+import { sendOrderStatusEmail } from "./emailApi";
 function toMillis(createdAt) {
   if (!createdAt) return 0;
   if (createdAt.toDate) return createdAt.toDate().getTime();
@@ -109,8 +109,30 @@ export default function Orders() {
         return;
       }
 
+      // 1️⃣ Update Firestore
       await updateDoc(ref, { status: "Cancelled" });
 
+      // 2️⃣ Send cancellation email
+      try {
+        await sendOrderStatusEmail({
+          email: order.customerEmail,   // user's email from Firestore
+          orderId: order.orderId,
+          paymentId: order.paymentId || null,
+          amount: order.totalPrice || 0,
+          name: order.billingDetails
+            ? `${order.billingDetails.firstName} ${order.billingDetails.lastName}`
+            : "Customer",
+          items: order.items || [],
+          shippingAddress: order.billingDetails || null,
+          statusType: "Cancelled",
+          estimatedDelivery: order.estimatedDelivery || null,
+        });
+        console.log("📧 Cancellation email sent successfully");
+      } catch (err) {
+        console.error("❌ Failed to send cancellation email:", err.message);
+      }
+
+      // 3️⃣ Update local React state to reflect cancellation
       setOrders((prev) =>
         prev.map((o) =>
           o.id === cancelPopup.orderId ? { ...o, status: "Cancelled" } : o
@@ -126,6 +148,7 @@ export default function Orders() {
       setCancelPopup({ show: false, orderId: null });
       setSuccessPopup(true);
       setTimeout(() => setSuccessPopup(false), 2500);
+
 
     } catch (err) {
       console.error(err);
